@@ -23,7 +23,7 @@ plot_cutfree_data <- function() {
     ggplot2::geom_point(aes(x=n_sites,y=time),color="black",size=point_size) +
     ggplot2::geom_point(aes(x=n_sites,y=random_runtime),color=red,size=point_size)+
     ggplot2::xlab("Restriction Sites") +
-    ggplot2::ylab("Run Time (s)") +
+    ggplot2::ylab("Runtime (s)") +
     ggplot2::geom_smooth(aes(x=n_sites,y=time),method="lm", se=FALSE,color="black")+
     ggplot2::geom_smooth(aes(x=n_sites,y=random_runtime),method="lm", se=FALSE,color=red)+
     ggplot2::theme_classic(base_size=font_size,base_family = font,base_line_size = line_size)
@@ -43,7 +43,7 @@ plot_cutfree_data <- function() {
     ggplot2::geom_point(aes(x=oligo_lengths, y=time),color="black",size=point_size) +
     ggplot2::geom_point(aes(x=oligo_lengths, y=random_runtime),color=red,size=point_size) +
     ggplot2::xlab("Randomer Length (bp)") +
-    ggplot2::ylab("Run Time (s)") +
+    ggplot2::ylab("Runtime (s)") +
     ggplot2::geom_smooth(aes(x=oligo_lengths,y=time),method="lm", se=FALSE,color="black")+
     ggplot2::geom_smooth(aes(x=oligo_lengths,y=random_runtime),method="lm", se=FALSE,color=red)+
     ggplot2::theme_classic(base_size=font_size,base_family = font,base_line_size = line_size)
