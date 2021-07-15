@@ -1,4 +1,4 @@
-setwd("~/Documents/GitHut/OligoRL/NSR_RL/Plotting")
+setwd("~/Documents/GitHub/OligoRL/NSR_RL/Plotting")
 library(ggplot2)
 library(stringr)
 
@@ -107,7 +107,7 @@ plot_NSR_Benchmarking_Data <- function(infile1,infile2){
   PlotA <- ggplot2::ggplot(data1,(aes(x=transcriptome_sizeMB,y=timeMin,label=label_species)))+
     geom_point(color=red,size=point_size)+
     xlab("Transcriptome Size (Mb)")+
-    ylab("Run Time (min)")+
+    ylab("Runtime (min)")+
     geom_smooth(method="lm", se=FALSE,color=red,size=point_size)+
     ggrepel::geom_text_repel(
       segment.size=0.4,
@@ -135,7 +135,7 @@ plot_NSR_Benchmarking_Data <- function(infile1,infile2){
     geom_smooth(aes(x=run,y=with_intraMin),method="lm",se=FALSE,color="black",size=point_size)+
     theme_classic(base_size=font_size,base_family = font,base_line_size = 1.1*line_size)+
     xlab("Pool Size")+
-    ylab("Run Time (min)")
+    ylab("Runtime (min)")
   plts <- cowplot::plot_grid(PlotA,PlotB,NULL, rel_widths = c(2,1,1),align="vh",nrow=1)
   return(plts)
 }

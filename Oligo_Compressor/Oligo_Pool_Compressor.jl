@@ -550,14 +550,14 @@ end
 #data=benchmark_oligo_compressor(;nsims=100)
 
 function run_compression_experiment()
-    orig_pool=read_oligo_pool(CSV.read("./SMU_NSR_Brute_Force_All_Randomers.csv",DataFrame))
+    orig_pool=read_oligo_pool(CSV.read("./Oligo_Compressor/Experiments/Nature_2018_NSR_Primers.csv",DataFrame))
     all_bases = dna"AGCTMRWSYKVHDBN"
     new_pool=oligo_pool_compressor(orig_pool,all_bases;nsims=100)
     data=DataFrame(randomers=new_pool)
     orig_len=length(orig_pool)
     new_len=length(new_pool)
     println("Original Length: $orig_len, New Length: $new_len")
-    filename="SMU_NSR_BF_Compressed.csv"
+    filename="./Oligo_Compressor/Experiments/Nature_2018_NSR_Primers_Compressed.csv"
     CSV.write(filename,data)
 end
 run_compression_experiment()
