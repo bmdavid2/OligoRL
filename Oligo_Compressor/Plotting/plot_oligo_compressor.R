@@ -1,4 +1,4 @@
-setwd("~/Documents/Jensen Lab/OligoRL/Oligo Compilier ")
+setwd("~/Documents/GitHub/OligoRL/Oligo_Compressor/Plotting")
 library(ggplot2)
 library(readxl)
 library(dplyr)
@@ -35,7 +35,7 @@ plotoligocompressor <-  function() {
   plot3 <-  ggplot(poolsizedata)+
     ggplot2::geom_point(aes(x=poolsize,y=timeMin),color=red,size=point_size)+
     ggplot2::xlab("Original Pool Size") +
-    ggplot2::ylab("Runtime (s)") +
+    ggplot2::ylab("Run Time (s)") +
     ggplot2::theme_classic(base_size=font_size,base_family = font,base_line_size=line_size)
   #plot4 <- ggplot(lengthsdata)+
     #ggplot2::geom_point(aes(x=oligo_length,y=time),color="red")+

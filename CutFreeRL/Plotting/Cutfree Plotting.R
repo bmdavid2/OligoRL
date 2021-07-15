@@ -1,4 +1,4 @@
-setwd("~/Documents/Jensen Lab/OligoRL/Cutfree Rollout Benchmarking")
+setwd("~/Documents/GitHub/OligoRL/CutFreeRL/Plotting")
 library(ggplot2)
 library(dplyr)
 
@@ -22,8 +22,8 @@ plot_cutfree_data <- function() {
     ggplot2::scale_y_log10(breaks=c(0.01,0.1,1,10,100),labels=c("0.01","0.1","1","10","100")) +
     ggplot2::geom_point(aes(x=n_sites,y=time),color="black",size=point_size) +
     ggplot2::geom_point(aes(x=n_sites,y=random_runtime),color=red,size=point_size)+
-    ggplot2::xlab("Blocked Sites") +
-    ggplot2::ylab("Runtime [s]") +
+    ggplot2::xlab("Restriction Sites") +
+    ggplot2::ylab("Run Time (s)") +
     ggplot2::geom_smooth(aes(x=n_sites,y=time),method="lm", se=FALSE,color="black")+
     ggplot2::geom_smooth(aes(x=n_sites,y=random_runtime),method="lm", se=FALSE,color=red)+
     ggplot2::theme_classic(base_size=font_size,base_family = font,base_line_size = line_size)
@@ -32,7 +32,7 @@ plot_cutfree_data <- function() {
     ggplot2::scale_y_log10(breaks=c(1e9,1e10,1e11),labels=c(expression(paste("10"^"9")),expression(paste("10"^"10")),expression(paste("10"^"11")))) +
     ggplot2::geom_point(aes(x=n_sites,y=degeneracy),color="black",size=point_size) +
     ggplot2::geom_point(aes(x=n_sites,y=random_objval),color=red,size=point_size)+
-    ggplot2::xlab("Blocked Sites") +
+    ggplot2::xlab("Restriction Sites") +
     ggplot2::ylab("Possible Sequences") +
     ggplot2::geom_smooth(aes(x=n_sites,y=degeneracy),method="lm", se=FALSE,color="black")+
     ggplot2::geom_smooth(aes(x=n_sites,y=random_objval),method="lm", se=FALSE,color=red)+
@@ -42,8 +42,8 @@ plot_cutfree_data <- function() {
     ggplot2::scale_y_log10(breaks=c(0.1,1,10,100),labels=c("0.1","1","10","100")) +
     ggplot2::geom_point(aes(x=oligo_lengths, y=time),color="black",size=point_size) +
     ggplot2::geom_point(aes(x=oligo_lengths, y=random_runtime),color=red,size=point_size) +
-    ggplot2::xlab("Randomer Length [bp]") +
-    ggplot2::ylab("Runtime [s]") +
+    ggplot2::xlab("Randomer Length (bp)") +
+    ggplot2::ylab("Run Time (s)") +
     ggplot2::geom_smooth(aes(x=oligo_lengths,y=time),method="lm", se=FALSE,color="black")+
     ggplot2::geom_smooth(aes(x=oligo_lengths,y=random_runtime),method="lm", se=FALSE,color=red)+
     ggplot2::theme_classic(base_size=font_size,base_family = font,base_line_size = line_size)
@@ -55,7 +55,7 @@ plot_cutfree_data <- function() {
   
   cowplot::plot_grid(plot1, plot0,plot2,NULL,rel_widths = c(1,1,1,0.75), align= "h", nrow=1 )
   scaling_factor=5.5
-  ggsave("Cutfree_figure_plots_CutFree_Only.tiff",width=scaling_factor,height=scaling_factor/3.75,dpi=300,units="in")
+  ggsave("CutfreeRL_Figure.tiff",width=scaling_factor,height=scaling_factor/3.75,dpi=300,units="in")
 }
 plot_cutfree_data()
 ## Test cutfree runtime significance 
