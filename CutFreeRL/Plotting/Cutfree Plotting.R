@@ -24,6 +24,7 @@ plot_cutfree_data <- function() {
     ggplot2::geom_point(aes(x=n_sites,y=random_runtime),color=red,size=point_size)+
     ggplot2::xlab("Restriction Sites") +
     ggplot2::ylab("Runtime (s)") +
+    ggplot2::labs(color="black")+
     ggplot2::geom_smooth(aes(x=n_sites,y=time),method="lm", se=FALSE,color="black")+
     ggplot2::geom_smooth(aes(x=n_sites,y=random_runtime),method="lm", se=FALSE,color=red)+
     ggplot2::theme_classic(base_size=font_size,base_family = font,base_line_size = line_size)
@@ -34,6 +35,7 @@ plot_cutfree_data <- function() {
     ggplot2::geom_point(aes(x=n_sites,y=random_objval),color=red,size=point_size)+
     ggplot2::xlab("Restriction Sites") +
     ggplot2::ylab("Possible Sequences") +
+    ggplot2::labs(color="black")+
     ggplot2::geom_smooth(aes(x=n_sites,y=degeneracy),method="lm", se=FALSE,color="black")+
     ggplot2::geom_smooth(aes(x=n_sites,y=random_objval),method="lm", se=FALSE,color=red)+
     ggplot2::theme_classic(base_size=font_size,base_family = font,base_line_size = line_size)
@@ -47,6 +49,7 @@ plot_cutfree_data <- function() {
     ggplot2::geom_smooth(aes(x=oligo_lengths,y=time),method="lm", se=FALSE,color="black")+
     ggplot2::geom_smooth(aes(x=oligo_lengths,y=random_runtime),method="lm", se=FALSE,color=red)+
     ggplot2::theme_classic(base_size=font_size,base_family = font,base_line_size = line_size)
+
   
   #results %>%
     #dplyr::group_by(n_sites) %>%
@@ -55,7 +58,7 @@ plot_cutfree_data <- function() {
   
   cowplot::plot_grid(plot1, plot0,plot2,NULL,rel_widths = c(1,1,1,0.75), align= "h", nrow=1 )
   scaling_factor=5.5
-  ggsave("CutfreeRL_Figure.tiff",width=scaling_factor,height=scaling_factor/3.75,dpi=300,units="in")
+  ggsave("CutfreeRL_Figure_Black_Labs.tiff",width=scaling_factor,height=scaling_factor/3.75,dpi=300,units="in")
 }
 plot_cutfree_data()
 ## Test cutfree runtime significance 

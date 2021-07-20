@@ -49,33 +49,33 @@ plot_NSR_Performance_Data <- function(infile1,infile2,infile3,infile4,BF_poolsiz
   line_size=.4
   red <- "#d73027"
   PlotA <- ggplot(data1,aes(x=new_run,y=pct_genes_hit))+
-    geom_line(color=red)+
     geom_vline(xintercept=BF_poolsize,colour="black",linetype="dashed")+
     geom_hline(yintercept=BF_pct_genes_hit,colour="black",linetype="dashed")+
+    geom_line(color=red)+
     xlab("Pool Size")+
     ylab("Genes Hit (%)")+
     scale_y_continuous(labels= scales::number_format(accuracy=1))+
     theme_classic(base_size=font_size,base_family = font,base_line_size=line_size)
   PlotB <- ggplot(data2,aes(x=new_run,y=hits_per_gene))+
-    geom_line(color=red)+
     geom_vline(xintercept=BF_poolsize,colour="black",linetype="dashed")+
     geom_hline(yintercept=BF_avg_hits_per_gene,colour="black",linetype="dashed")+
+    geom_line(color=red)+
     scale_y_continuous(labels = scales::comma)+
     xlab("Pool Size")+
     ylab("Average Hits/Gene")+
     theme_classic(base_size=font_size,base_family = font,base_line_size=line_size)
   PlotC <- ggplot(data3,aes(x=new_run,y=cumulative_interuniformity_score))+
-    geom_line(color=red)+
     geom_vline(xintercept=BF_poolsize,colour="black",linetype="dashed")+
     geom_hline(yintercept=BF_interuniformity_score,colour="black",linetype="dashed")+
+    geom_line(color=red)+
     xlab("Pool Size")+
     ylab("Intergene Uniformity")+
     scale_y_continuous(labels= scales::number_format(accuracy=.01))+
     theme_classic(base_size=font_size,base_family = font,base_line_size=line_size)
   PlotD <- ggplot(data4,aes(x=new_run,y=cumulative_intrauniformity_score))+
-    geom_line(color=red)+
     geom_vline(xintercept=BF_poolsize,color="black",linetype="dashed")+
     geom_hline(yintercept=BF_intrauniformity_score,linetype="dashed",colour="black")+
+    geom_line(color=red)+
     xlab("Pool Size")+
     ylab("Intragene Uniformity")+
     scale_y_continuous(labels= scales::number_format(accuracy=.01))+
@@ -105,10 +105,10 @@ plot_NSR_Benchmarking_Data <- function(infile1,infile2){
   spec_label_idx <- c(1,2,3,4,21,10,18)
   data1$label_species[spec_label_idx] <- data1$formatted_species[spec_label_idx]
   PlotA <- ggplot2::ggplot(data1,(aes(x=transcriptome_sizeMB,y=timeMin,label=label_species)))+
+    geom_smooth(method="lm", se=FALSE,color=red,size=point_size)+
     geom_point(color=red,size=point_size)+
     xlab("Transcriptome Size (Mb)")+
     ylab("Runtime (min)")+
-    geom_smooth(method="lm", se=FALSE,color=red,size=point_size)+
     ggrepel::geom_text_repel(
       segment.size=0.4,
       size=8/3,
@@ -129,10 +129,10 @@ plot_NSR_Benchmarking_Data <- function(infile1,infile2){
   data2$with_intraMin <- data2$with_intra/60
   data2 <- data2[seq(1,nrow(data2),by=20), ]
   PlotB <- ggplot(data2)+
-    geom_point(aes(x=run,y=without_intraMin),color=blue,size=point_size)+
     geom_smooth(aes(x=run,y=without_intraMin),method="lm",se=FALSE,color=blue,size=point_size)+
-    geom_point(aes(x=run,y=with_intraMin),color="black",size=point_size)+
+    geom_point(aes(x=run,y=without_intraMin),color=blue,size=point_size)+
     geom_smooth(aes(x=run,y=with_intraMin),method="lm",se=FALSE,color="black",size=point_size)+
+    geom_point(aes(x=run,y=with_intraMin),color="black",size=point_size)+
     theme_classic(base_size=font_size,base_family = font,base_line_size = 1.1*line_size)+
     xlab("Pool Size")+
     ylab("Runtime (min)")
