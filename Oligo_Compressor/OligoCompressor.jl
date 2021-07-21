@@ -209,7 +209,7 @@ end
 function oligo_rollout(bases,sites; simulate=simulate_random_hit_score, kwargs...)
     n=length(bases)
     randomer= dna"-" ^ n
-    # Find the longest blocking site and use this as the horizon. (they should all be equal)
+    # Find the longest oligo and use this as the horizon. (they should all be equal)
     max_len = map(length, sites) |> maximum
     horizon = max_len
     for i= 1:n
