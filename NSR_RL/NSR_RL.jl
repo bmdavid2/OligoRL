@@ -579,8 +579,8 @@ function mRNA_all_rewards_function_factory(randomer::LongSequence{DNAAlphabet{4}
                 gap_distances=filter(x -> length(x)>0,gap_distances)
                 intrauniformity_scores=calculate_DULQ_score.(gap_distances)
                 filtered_hit_positions=filter(x -> length(x)>0,scored_hit_positions)
-                hitcounts=(length.(filtered_hit_positions));
-                interuniformity_score=calculate_DULQ_score(hitcounts)
+                filtered_hitcounts=(length.(filtered_hit_positions));
+                interuniformity_score=calculate_DULQ_score(filtered_hitcounts)
                 filtered_hits=length.(filtered_hit_positions)
                 final_score=genes_hit_weight*length(filtered_hits)+ total_hits_weight*sum(filtered_hits)+ interuniformity_weight*mRNAnum*interuniformity_score+intrauniformity_weight*mRNAnum*mean(intrauniformity_scores)
             end 
@@ -607,8 +607,8 @@ function mRNA_all_rewards_function_factory(randomer::LongSequence{DNAAlphabet{4}
                 gap_distances=filter(x -> length(x)>0,gap_distances)
                 intrauniformity_scores=calculate_DULQ_score.(gap_distances)
                 filtered_hit_positions=filter(x -> length(x)>0,scored_hit_positions)
-                hitcounts=(length.(filtered_hit_positions));
-                interuniformity_score=calculate_DULQ_score(hitcounts)
+                filtered_hitcounts=(length.(filtered_hit_positions));
+                interuniformity_score=calculate_DULQ_score(filtered_hitcounts)
                 filtered_hits=length.(filtered_hit_positions)
                 genes_hit=length(filtered_hits)
                 total_hits=sum(filtered_hits)
@@ -899,15 +899,15 @@ end
 
 function benchmark_NSR_RL()
     DF1=DataFrame()
-    nexps=4;
-    genes_hit_weights=[1 0 0 0]
-    total_hits_weights=[0 1 0 0]
-    interuniformity_weights=[0 0 1 0]
-    intrauniformity_weights=[0 0 0 1]
+    nexps=1;
+    genes_hit_weights=[1]
+    total_hits_weights=[1e-4]
+    interuniformity_weights=[1]
+    intrauniformity_weights=[1]
     species="S_mutans"
-    filename="./S_mutans_NSR_Refactor_NSR_RL_All_Rewards_BF_Comparison_6_21_21.csv"
+    filename="./S_mutans_NSR_Pool_7_22_21.csv"
     for i = 1:nexps
-        data=run_NSR_RL(;species=species,pool_size=453,nsims=100,genes_hit_weight=genes_hit_weights[i],total_hits_weight=total_hits_weights[i],interuniformity_weight=interuniformity_weights[i],intrauniformity_weight=intrauniformity_weights[i])
+        data=run_NSR_RL(;species=species,pool_size=100,nsims=100,genes_hit_weight=genes_hit_weights[i],total_hits_weight=total_hits_weights[i],interuniformity_weight=interuniformity_weights[i],intrauniformity_weight=intrauniformity_weights[i])
         DF1=vcat(DF1,data);
         CSV.write(filename,DF1)
     end 
@@ -1036,13 +1036,13 @@ function cumulative_runtime()
 #countdata=gene_coverage_counts(randomers,"./Genome Data/S_mutans_Genes.csv")
 #CSV.write("S_mutans_NSR_Comparison_2_gene_coverage_5-19-21.csv",countdata)
 #analyze_cumulative_NSR_Pool(randomers,"S_mutans";outputfile="./S_mutans_Cumulative_NSR_Pool_All_Rewards_6_22_21.csv")
-data=CSV.read("S_mutans_NSR_CCD_6_30_21.csv",DataFrame)
-randomers=stringarray2dnaarray(split(data[12,12],","))
+#data=CSV.read("S_mutans_NSR_CCD_6_30_21.csv",DataFrame)
+#randomers=stringarray2dnaarray(split(data[12,12],","))
 #randomers=filter(x -> degeneracy(x;uselog2=false)>0,randomers)
 #randomers=decompress_pool(randomers)
 #rcomps=reverse_complement.(randomers)
 #blocking_sites=read_blocking_sites(CSV.read("./Genome Data/S_mutans_rRNA_tRNA.csv",DataFrame));
 #sites=unique(vcat(blocking_sites,rcomps,randomers))
-#benchmark_NSR_RL()
+benchmark_NSR_RL()
 
-analyze_cumulative_NSR_Pool(randomers,"S_mutans";outputfile="./S_mutans_Cumulative_NSR_CCD_Run_12_6_30_21.csv")
+#analyze_cumulative_NSR_Pool(randomers,"S_mutans";outputfile="./S_mutans_Cumulative_NSR_CCD_Run_12_6_30_21.csv")
