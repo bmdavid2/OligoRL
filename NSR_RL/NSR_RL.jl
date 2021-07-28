@@ -1043,6 +1043,8 @@ function cumulative_runtime()
 #rcomps=reverse_complement.(randomers)
 #blocking_sites=read_blocking_sites(CSV.read("./Genome Data/S_mutans_rRNA_tRNA.csv",DataFrame));
 #sites=unique(vcat(blocking_sites,rcomps,randomers))
-benchmark_NSR_RL()
+#benchmark_NSR_RL()
 
-#analyze_cumulative_NSR_Pool(randomers,"S_mutans";outputfile="./S_mutans_Cumulative_NSR_CCD_Run_12_6_30_21.csv")
+data=CSV.read("./NSR_RL/Brute Force Pools V2 Compressed/S_mutnas_Brute_Force_Compressed.csv",DataFrame)
+randomers=stringarray2dnaarray(data[:,1])
+analyze_cumulative_NSR_Pool(randomers,"S_mutans";outputfile="./NSR_RL/Experiments/S_mutans_Cumulative_BF_Compressed.csv")
