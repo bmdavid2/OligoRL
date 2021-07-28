@@ -3,7 +3,7 @@ library(ggplot2)
 library(stringr)
 
 
-plot_NSR_Performance_Data <- function(infile1,infile2,infile3,infile4,BF_poolsize=453,BF_pct_genes_hit=100, BF_total_hits=412260, BF_interuniformity_score=.337,BF_intrauniformity_score=0.23){
+plot_NSR_Performance_Data <- function(infile1,infile2,infile3,infile4,BF_poolsize=453,BF_pct_genes_hit=100, BF_total_hits=412260, BF_interuniformity_score=.337,BF_intrauniformity_score=0.237){
   ##Data1
   data1 <- read.csv(infile1)
   data1$failed <- grepl("-",data1$randomer)
@@ -54,7 +54,7 @@ plot_NSR_Performance_Data <- function(infile1,infile2,infile3,infile4,BF_poolsiz
     geom_line(color=red)+
     xlab("Pool Size")+
     ylab("Genes Hit (%)")+
-    scale_y_continuous(labels= scales::number_format(accuracy=1))+
+    scale_y_continuous(labels= scales::number_format(accuracy=1),limits=c(86,100))+
     theme_classic(base_size=font_size,base_family = font,base_line_size=line_size)
   PlotB <- ggplot(data2,aes(x=new_run,y=hits_per_gene))+
     geom_vline(xintercept=BF_poolsize,colour="black",linetype="dashed")+
@@ -70,7 +70,7 @@ plot_NSR_Performance_Data <- function(infile1,infile2,infile3,infile4,BF_poolsiz
     geom_line(color=red)+
     xlab("Pool Size")+
     ylab("Intergene Uniformity")+
-    scale_y_continuous(labels= scales::number_format(accuracy=.01))+
+    scale_y_continuous(labels=c("0.28","0.30","0.32","0.34","0.36"),limits=c(0.26,0.36),breaks=c(0.28,0.30,0.32,0.34,0.36))+
     theme_classic(base_size=font_size,base_family = font,base_line_size=line_size)
   PlotD <- ggplot(data4,aes(x=new_run,y=cumulative_intrauniformity_score))+
     geom_vline(xintercept=BF_poolsize,color="black",linetype="dashed")+
@@ -78,7 +78,7 @@ plot_NSR_Performance_Data <- function(infile1,infile2,infile3,infile4,BF_poolsiz
     geom_line(color=red)+
     xlab("Pool Size")+
     ylab("Intragene Uniformity")+
-    scale_y_continuous(labels= scales::number_format(accuracy=.01))+
+    scale_y_continuous(labels=c("0.16","0.18","0.20","0.22","0.24"),limits=c(0.14,0.24),breaks=c(0.16,0.18,0.20,0.22,0.24))+
     theme_classic(base_size=font_size,base_family = font,base_line_size=line_size)
 
   return(cowplot::plot_grid(PlotA,PlotB,PlotC,PlotD, align="vh",nrow=1))
