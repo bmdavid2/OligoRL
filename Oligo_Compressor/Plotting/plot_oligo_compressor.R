@@ -50,6 +50,8 @@ plotoligocompressor <-  function() {
 plotoligocompressor()
 
 plotrecompression <- function(){
+  red="#d73027"
+  blue="#4575b4"
   recomp1000 <- read.csv('recompression_3_19_21_add_nsims100.csv')
   recomp1000 <- recomp1000[order(recomp1000$decompressedsize), ]
   recomp1000$order <- c(1:nrow(recomp1000))
@@ -59,16 +61,16 @@ plotrecompression <- function(){
   recomp100$order <- c(1:nrow(recomp100))
   recomp100 <- recomp100[1:(nrow(recomp100)-7), ]
   plot1 <- ggplot(recomp1000)+
-    ggplot2::geom_point(aes(x=order,y=recompressedsize),color="red")+
+    ggplot2::geom_point(aes(x=order,y=recompressedsize),color=red)+
     ggplot2::geom_point(aes(x=order,y=poolsize),color="black")+
-    ggplot2::geom_point(aes(x=order,y=decompressedsize),color="blue")+
+    ggplot2::geom_point(aes(x=order,y=decompressedsize),color=blue)+
     ggplot2::theme_classic()+
     ggplot2::xlab("Run Number (nsims=1000)")+
     ggplot2::ylab("Pool Size")
   plot2 <- ggplot(recomp1000)+
-    ggplot2::geom_point(aes(x=order,y=recompressed100),color="red")+
+    ggplot2::geom_point(aes(x=order,y=recompressed100),color=red)+
     ggplot2::geom_point(aes(x=order,y=poolsize),color="black")+
-    ggplot2::geom_point(aes(x=order,y=decompressedsize),color="blue")+
+    ggplot2::geom_point(aes(x=order,y=decompressedsize),color=blue)+
     ggplot2::theme_classic()+
     ggplot2::xlab("Run Number (nsims=100)")+
     ggplot2::ylab("Pool Size")
