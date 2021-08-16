@@ -18,6 +18,8 @@ plotoligocompressor <-  function() {
   recompdata <- recompdata[order(recompdata$decompressedsize), ]
   recompdata$order <- c(1:nrow(recompdata))
   recompdata <- recompdata[1:(nrow(recompdata)-7), ]
+  recompdata$efficiency <- (recompdata$decompressedsize-recompdata$recompressedsize)/(recompdata$decompressedsize-recompdata$poolsize)
+  meaneff <- mean(recompdata$efficiency)
   plot1 <- ggplot(poolsizedata)+
     ggplot2::geom_point(aes(x=poolsize,y=compressedsize),color=red,size=point_size) +
     ggplot2::geom_point(aes(x=poolsize,y=poolsize),color=blue,size=point_size)+
@@ -42,8 +44,8 @@ plotoligocompressor <-  function() {
     #ggplot2::xlab("Oligo Length")+
     #ggplot2::ylab("Runtime [s]")+
     #ggplot2::theme_classic()
-  
-  
+  print("Mean Efficiency")
+  meaneff
   cowplot::plot_grid(plot1,plot3,plot2,NULL,rel_widths = c(1,1,1,.75),nrow=1,align="vh")
   ggsave("Oligo_Compressor_Figure_Plots.tiff",width=5.5,height=5.5/3.75,dpi=300,units="in")
 }
