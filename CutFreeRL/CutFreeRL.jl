@@ -193,7 +193,7 @@ end
 
 
 all_bases = dna"AGCTMRWSYKVHDBN"
-all_ns = [all_bases for _ in 1:10] # make a length 10 randomer
+all_ns = [all_bases for _ in 1:40] # make a length 10 randomer
 sites = [dna"GGTCTC"] # BsaI
 
 randomer = cutfree_rollout(all_ns, sites, simulate=simulate_random, nsims=1000)
