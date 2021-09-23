@@ -14,7 +14,6 @@ plotoligocompressor <-  function() {
   poolsizedata <- read.csv('oligo_compressor_benchmark_5_11_21.csv')
   poolsizedata$timeMin=poolsizedata$time/60
   recompdata <- read.csv('recompression_experiment_4-23-21_nsims100.csv')
-  lengthsdata <- read.csv('oligo_compressor_benchmark_lengths_5_12_21.csv')
   recompdata <- recompdata[order(recompdata$decompressedsize), ]
   recompdata$order <- c(1:nrow(recompdata))
   recompdata <- recompdata[1:(nrow(recompdata)-7), ]

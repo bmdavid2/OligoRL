@@ -484,9 +484,7 @@ end
 
 
 
-function benchmark_oligo_compressor(;all_bases=dna"AGCTMRWSYKVHDBN",kwargs...) 
-    nreps=10;
-    testsizes=[100];
+function benchmark_oligo_compressor(;nreps=10,testsizes=[50 100 150 200 250 500 1000 1500 2000 2500 3000 3500 4000 4096],all_bases=dna"AGCTMRWSYKVHDBN",kwargs...) 
     poolsize=repeat(testsizes,nreps)
     nruns=length(poolsize)
     run=1:nruns
@@ -500,15 +498,15 @@ function benchmark_oligo_compressor(;all_bases=dna"AGCTMRWSYKVHDBN",kwargs...)
         stats= @timed oligo_pool_compressor(randpool,all_bases;kwargs...)
         compressedsize[i]=length(stats.value)
         time[i]=stats.time
-        filename="oligo_compressor_4_15_21.csv"
         data=DataFrame(poolsize=poolsize,compressedsize=compressedsize,time=time)
-        #CSV.write(filename,data)
     end 
     data=DataFrame(pool=pools,poolsize=poolsize,compressedsize=compressedsize,time=time)
     return data
 end
-function run_recompression_experiment(;nruns=50,all_bases = dna"AGCTMRWSYKVHDBN",kwargs...)
-    sizes=repeat([1,5,10,15,20],10)
+function run_recompression_experiment(;nreps=10,all_bases = dna"AGCTMRWSYKVHDBN",kwargs...)
+    size_params=[1,5,10,15,20]
+    sizes=repeat(size_params,nreps)
+    nruns=length(size_params)*nreps
     runs=1:nruns
     pools=[]
     poolsize=zeros(nruns)
@@ -526,23 +524,20 @@ function run_recompression_experiment(;nruns=50,all_bases = dna"AGCTMRWSYKVHDBN"
     end 
     data=DataFrame(A=runs,B=pools,C=poolsize,D=decompressedsize,E=recompressedsize)
     rename!(data,[:runs,:pools,:poolsize,:decompressedsize,:recompressedsize])
-    CSV.write("recompression_experiment_3-19-21.csv",data)
+    return data
 end 
 #benchmark_oligo_compressor()
-function rerun_recompression_experiment(filename;nruns=50,all_bases = dna"AGCTMRWSYKVHDBN",kwargs...)
-    sizes=repeat([1,5,10,15,20],10)
-    runs=1:nruns
+function rerun_recompression_experiment(data;all_bases = dna"AGCTMRWSYKVHDBN",kwargs...)
 
-    data=CSV.read("recompression_experiment_3-19-21.csv",DataFrame)
     data[:recompressed100]=0;
-    for i = 1:nruns 
+    for i = 1:nrow(data) 
         randpool=stringarray2dnaarray(split(data[i,2],","))
 
         uncomrandpool=decompress_pool(randpool);
         recomprandpool=oligo_pool_compressor(uncomrandpool,all_bases;kwargs...)
         data[i,:recompressed100]=length(recomprandpool);
     end 
-    CSV.write(filename,data)
+    return data
 end 
 
 
@@ -550,14 +545,23 @@ end
 #data=benchmark_oligo_compressor(;nsims=100)
 
 function run_compression_experiment()
-    orig_pool=read_oligo_pool(CSV.read("./Oligo_Compressor/Experiments/Nature_2018_NSR_Primers.csv",DataFrame))
+    orig_pool=read_oligo_pool(CSV.read("./Nature_2018_NSR_Primers.csv",DataFrame))
     all_bases = dna"AGCTMRWSYKVHDBN"
     new_pool=oligo_pool_compressor(orig_pool,all_bases;nsims=100)
     data=DataFrame(randomers=new_pool)
     orig_len=length(orig_pool)
     new_len=length(new_pool)
     println("Original Length: $orig_len, New Length: $new_len")
-    filename="./Oligo_Compressor/Experiments/Nature_2018_NSR_Primers_Compressed.csv"
-    CSV.write(filename,data)
+    return data
 end
-run_compression_experiment()
+
+
+poolsize_benchmark=benchmark_oligo_compressor(;nreps=1,nsims=100)
+CSV.write("./oligo_compressor_benchmark.csv",poolsize_benchmark)
+
+recompression_data=run_recompression_experiment(;nreps=1,nsims=1000)
+recompression_data=rerun_recompression_experiment(recompression_data;nsims=100)
+CSV.write("./recompression_experiments.csv",recompression_data)
+
+nature_data=run_compression_experiment()
+CSV.write("./Nature_2018_NSR_Primers_Compressed.csv",nature_data)
