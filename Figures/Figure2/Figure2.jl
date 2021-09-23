@@ -544,7 +544,7 @@ end
 #rerun_recompression_experiment("recompression_3_19_21_add_nsims100.csv";nsims=100)
 #data=benchmark_oligo_compressor(;nsims=100)
 
-function run_compression_experiment()
+function run_Nature2018_experiment()
     orig_pool=read_oligo_pool(CSV.read("./Nature_2018_NSR_Primers.csv",DataFrame))
     all_bases = dna"AGCTMRWSYKVHDBN"
     new_pool=oligo_pool_compressor(orig_pool,all_bases;nsims=100)
@@ -555,13 +555,23 @@ function run_compression_experiment()
     return data
 end
 
+########################
+# Run this code to re-create the experiments for Figure 2. 
+##########################
 
+
+
+
+
+# Panels C-D
 poolsize_benchmark=benchmark_oligo_compressor(;nreps=10,nsims=100)
 CSV.write("./oligo_compressor_benchmark.csv",poolsize_benchmark)
 
+# Panel E
 recompression_data=run_recompression_experiment(;nreps=10,nsims=1000)
 recompression_data=rerun_recompression_experiment(recompression_data;nsims=100)
 CSV.write("./recompression_experiments.csv",recompression_data)
 
-nature_data=run_compression_experiment()
+# Run the "for instance" experiment to compress the NSR pool from the Nature 2018 paper mentioned in text. (Data Not shown in figure, only in text).
+nature_data=run_Nature2018_experiment()
 CSV.write("./Nature_2018_NSR_Primers_Compressed.csv",nature_data)
