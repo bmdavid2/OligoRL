@@ -1,6 +1,6 @@
 import Base: *, sort
 using Random, Statistics, DataFrames, CSV
-using BioSequences, FASTX, XLSX, CPUTime
+using BioSequences, XLSX
 
 #The following functions are the base set of tools that this program uses 
 
