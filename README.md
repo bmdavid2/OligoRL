@@ -1,5 +1,5 @@
 # <img src="./OligoRL.png" width="30%" align="right" /> OligoRL
-
+[![MIT license](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/bmdavid2/OligoRL/blob/main/LICENSE)
 ## Description 
 A Reinforcemnt Learning Framework for Pooled Oligonucleotide Design. Solve oligo design problems with complex constraints. 
 
