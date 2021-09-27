@@ -1,6 +1,7 @@
 import Base: *, sort
 using Random, Statistics, DataFrames, CSV
 using BioSequences, FASTX, XLSX, CPUTime
+import BioSequences: iscompatible
 
 #The following functions are the base set of tools that this program uses 
 
@@ -17,6 +18,11 @@ function sort(seq::LongSequence{DNAAlphabet{4}}; rev::Bool=false)
 end
 
 # Determine whether or not a candidate sequence belongs to any member of the list of sites. We only want seq that belong to sites 
+"""
+    isvalid(seq,sites)
+
+Check if the degeneracy of seq is less than or equal to the number of sites it occurs in. 
+"""
 function isvalid(seq, sites)
     counter=0;
     for site in sites
@@ -58,6 +64,18 @@ function find_valid_randomer(prefix, bases, sites)
     return randomer
 end
 
+"""
+    degeneracy(base::DNA[, uselog2=true])
+
+Calculate the degeneracy of a single base. The degeneracy 
+is the number of bases in the code, so
+    degeneracy(DNA_N) == 4
+and
+    degeneracy(DNA_A) == 1
+
+If `uselog2`, the degeneracy is log2 transformed. Because degeneracy(DNA_Gap)=0, we approximate
+the log2 transformation as 2^-100. 
+"""
 function degeneracy(base::DNA; uselog2=true)
     deg = 0.0
     if base == DNA_N
@@ -85,20 +103,8 @@ function degeneracy(base::DNA; uselog2=true)
         return deg
     end
 end
-function dnaarray2stringarray(array)
-    array2=[]
-    for i=1:length(array)
-        push!(array2,convert(String,array[i]))
-    end
-    return array2
-end
-function stringarray2dnaarray(array)
-    array2=[]
-    for i=1:length(array)
-        push!(array2,LongDNASeq(array[i]))
-    end 
-    return array2
-end 
+
+
 """
     degeneracy(seq::LongSequence{DNAAlphabet{4}}; uselog2=true)
 
@@ -112,6 +118,11 @@ function degeneracy(seq::LongSequence{DNAAlphabet{4}}; uselog2=true)
     end
 end
 
+"""
+    pooled_degeneracy(pool)
+
+Calcualte the sum degeneracy of pool.
+"""
 function pooled_degeneracy(pool)
     deg=0;
     for randomer in pool
@@ -120,18 +131,29 @@ function pooled_degeneracy(pool)
     return deg
 end 
 
-function iscompatible_sequence(seqa,seqb)
-    n=length(seqa)
-    count=0
-    for i=1:n
-        if iscompatible(seqa[i],seqb[i])
-            count+=1;
-        end
+
+
+
+"""
+    iscompatible(seq_A::LongSequence{DNAAlphabet{4}},seq_B::LongSequence{DNAAlphabet{4}})
+
+Check if seq_A and seq_B contain at least one common sequence. Seq_A and Seq_B must be the same length.
+"""
+function iscompatible(seq_A::LongSequence{DNAAlphabet{4}},seq_B::LongSequence{DNAAlphabet{4}})
+    if length(seq_A) == length(seq_B)
+        return prod(iscompatible.(seq_A,seq_B))
+    else # Sequences are different lenghts 
+        return false 
     end 
-    return count==n
 end 
 
 ## Create the list of available actions. Reffered to as either ns or bases in other funcitons 
+
+"""
+    define_action_space(sites)
+
+Find the available base codes for an oligo, such that only codes that appear in sites at each postion are included.
+"""
 function define_action_space(sites)
     randomerlen=length(sites[1]);
     nsites=length(sites)
@@ -170,6 +192,12 @@ function define_action_space(sites)
     end 
     return bases
 end 
+
+""" 
+    omit_codes(bases)
+
+Helper function for define_action_space. 
+"""
 function omit_codes(bases)
     testcodes=dna"AGCTMRWSYKVHDBN"
     testcodes_copy=deepcopy(testcodes)
@@ -206,7 +234,17 @@ function simulate_random_hit_score(prefix,bases,sites; nsims=1000, horizon=lengt
 end
 
 ### MAIN FUNCTION
-function oligo_rollout(bases,sites; simulate=simulate_random_hit_score, kwargs...)
+"""
+    oligo_rollout(bases::Array{LongSequence{DNAAlphabet{4}},1},sites::Array{LongSequence{DNAAlphabet{4}},1}; simulate=simulate_random_hit_score, kwargs...)
+
+Design an oligo that captures as many oligos from sites as possible
+
+# Arguments
+- `bases`: An array allowed bases at each postion, usually all 15 degenerate bases. Option is given because some companies restrict which degernate bases are allowed.
+- `sites`: An array of non-degenerate oligos to be captured by an oligo. 
+- `simulate`: The choice of policy for rollout simulations. simulate_random_hit_score will perform a random rollout with reward for capturing sites. 
+"""
+function oligo_rollout(bases::Array{LongSequence{DNAAlphabet{4}},1},sites::Array{LongSequence{DNAAlphabet{4}},1}; simulate=simulate_random_hit_score, kwargs...)
     n=length(bases)
     randomer= dna"-" ^ n
     # Find the longest oligo and use this as the horizon. (they should all be equal)
@@ -216,7 +254,7 @@ function oligo_rollout(bases,sites; simulate=simulate_random_hit_score, kwargs..
         best_base= DNA_Gap
         best_score=0;
         start = max(i - max_len, 1) # only need to look back max_len when checking the oligos
-        bases=define_action_space(sites[findall(j -> iscompatible_sequence(j[start:i-1],randomer[start:i-1]),sites)])
+        bases=define_action_space(sites[findall(j -> iscompatible(j[start:i-1],randomer[start:i-1]),sites)])
         if length(bases[i])==1
             best_base=bases[i][1];
             #println("Shortcut Triggered at position $i")
@@ -250,6 +288,11 @@ function oligo_rollout(bases,sites; simulate=simulate_random_hit_score, kwargs..
     return randomer
 end
 
+"""
+    remove_hit_oligos(randomer,sites)
+
+Remove oligos from sites that are captured by randomer. 
+"""
 function remove_hit_oligos(randomer,sites)
     n=length(sites);
     hit_indicies=[]
@@ -287,6 +330,12 @@ function read_oligo_pool(data)
     return sites 
 end 
 ## Check for duplicates 
+
+""" 
+    remove_duplicates(sites)
+
+Remove any duplicate sequences from sites. 
+"""
 function remove_duplicates(sites)
     n=length(sites);
     dup_sites=[];
@@ -303,6 +352,11 @@ function remove_duplicates(sites)
 end 
 
 #Random pool generator for testing 
+"""
+    generate_random_pool(;randomerlen=6,randpoolsize=100,nucleotides=dna"ACGT")
+
+Generate a random pool of oligos with length=randomerlen and pool size=randpoolsize using nucleotides
+"""
 function generate_random_pool(;randomerlen=6,randpoolsize=100,nucleotides=dna"ACGT")
     randpool=[]
     randomer=dna"-"^randomerlen
@@ -334,6 +388,12 @@ function generate_random_pool(;randomerlen=6,randpoolsize=100,nucleotides=dna"AC
     
     return randpool      
 end 
+
+"""
+    decompress_oligo(comp_oligo)
+
+Expand a degnerate oligo into the non-degnerate oligos it defines. 
+"""
 function decompress_oligo(comp_oligo)
     basedict=Dict(DNA_A => dna"A", DNA_T => dna"T", DNA_C => dna"C", DNA_G => dna"G",DNA_R =>dna"AG",DNA_Y=>dna"CT",DNA_S=>dna"GC",
     DNA_W=>dna"AT",DNA_K=>dna"GT",DNA_M=>dna"AC",DNA_B=>dna"CGT",DNA_D=>dna"AGT",DNA_H=>dna"ACT",DNA_V=>dna"ACG",DNA_N=>dna"ACGT",DNA_Gap=>dna"-")
@@ -364,6 +424,13 @@ function decompress_oligo(comp_oligo)
     end
     return uncomp_oligos
 end
+
+"""
+    decompress_pool(compressed_pool)
+
+Expand a pool of degenerate oligos into a single pool of non-degnerate oligos. 
+"""
+
 function decompress_pool(compressed_pool)
     uncomppool=decompress_oligo(compressed_pool[1])
     for i = 2:length(compressed_pool)
@@ -454,7 +521,16 @@ function norm_degeneracy(lambda)
 end 
 
 ## Running function ##
-function oligo_pool_compressor(randpool,nucleotides;kwargs...)
+"""
+    oligo_pool_compressor(randpool::Array{LongSequence{DNAAlphabet{4}},1};,nucleotides::Array{LongSequence{DNAAlphabet{4}},1};kwargs...)
+
+Compress a pool non-degenerate oligos into a smaller pool of degenerate oligos. 
+
+# Arguments
+- `randpool`: A set of non-degenerate oligos to be compressed.
+- `nucleotides`: Base codes available to be used. 
+"""
+function oligo_pool_compressor(randpool::Array{LongSequence{DNAAlphabet{4}},1};,nucleotides::Array{LongSequence{DNAAlphabet{4}},1};kwargs...)
     sites=remove_duplicates(randpool);
     original_poolsize=length(sites)
     compressed_pool=[]
@@ -536,7 +612,7 @@ function rerun_recompression_experiment(filename;nruns=50,all_bases = dna"AGCTMR
     data=CSV.read("recompression_experiment_3-19-21.csv",DataFrame)
     data[:recompressed100]=0;
     for i = 1:nruns 
-        randpool=stringarray2dnaarray(split(data[i,2],","))
+        randpool=LongDNASeq.(split(data[i,2],","))
 
         uncomrandpool=decompress_pool(randpool);
         recomprandpool=oligo_pool_compressor(uncomrandpool,all_bases;kwargs...)
@@ -560,4 +636,4 @@ function run_compression_experiment()
     filename="./Oligo_Compressor/Experiments/Nature_2018_NSR_Primers_Compressed.csv"
     CSV.write(filename,data)
 end
-run_compression_experiment()
+#run_compression_experiment()

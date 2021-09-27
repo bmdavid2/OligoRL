@@ -66,9 +66,8 @@ is the number of bases in the code, so
 and
     degeneracy(DNA_A) == 1
 
-If `uselog2`, the degeneracy is log2 transformed. By convention,
-the degneracy of `DNA_Gap` is zero in both the log2-transformed
-and the untransformed case.
+If `uselog2`, the degeneracy is log2 transformed. Because degeneracy(DNA_Gap)=0, we approximate
+the log2 transformation as 2^-100. 
 """
 function degeneracy(base::DNA; uselog2=true)
     deg = 0.0
@@ -141,8 +140,17 @@ function simulate_greedy(prefix, bases, sites; horizon=length(bases))
     return degeneracy(prefix)
 end
 
+"""
+    cutfree_rollout(bases, sites; simulate=simulate_random, kwargs...)
 
-function cutfree_rollout(bases, sites; simulate=simulate_random, kwargs...)
+Run the rollout algorithm to solve the CutFree MDP. 
+
+# Arguments 
+- `bases`: An array allowed bases at each postion, usually all 15 degenerate bases. Option is given because some companies restrict which degernate bases are allowed.
+- `sites`: An array of restriciton enzyme recognition sequences to be blocked in the random barcode. 
+- `simulate`: The choice of policy for rollout simulations. simulate_random will use a random rollout policy. simulate_greedy will use a greedy 1 step lookahead policy. 
+"""
+function cutfree_rollout(bases::Array{LongSequence{DNAAlphabet{4}},1}, sites::Array{LongSequence{DNAAlphabet{4}},1}; simulate=simulate_random, kwargs...)
     n = length(bases)
     randomer = dna"-" ^ n
 

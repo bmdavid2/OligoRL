@@ -19,26 +19,16 @@ function sort(seq::LongSequence{DNAAlphabet{4}}; rev::Bool=false)
     sort(convert(Vector{DNA}, seq), by=degeneracy, rev=rev)
 end
 
-#Convert an array of DNA sequences to an array of strings
-function dnaarray2stringarray(array)
-    array2=[]
-    for i=1:length(array)
-        push!(array2,convert(String,array[i]))
-    end
-    return array2
-end
 
-#Convert an array of strings to an array of DNA sequences
-function stringarray2dnaarray(array)
-    array2=[]
-    for i=1:length(array)
-        push!(array2,LongDNASeq(array[i]))
-    end 
-    return array2
-end 
 # Determine if a given sequence is palindromic. Works both for unambiguous and ambigous bases. Returns TRUE if the sequence is a palindrome. 
-function is_palindrome(randomer)
-    return occursin(randomer,reverse_complement(randomer))
+
+"""
+    is_palindrome(seq)
+
+Check if seq is palindromic. 
+"""
+function is_palindrome(seq)
+    return occursin(seq,reverse_complement(seq))
 end 
 
 """
@@ -96,6 +86,12 @@ function degeneracy(seq::LongSequence{DNAAlphabet{4}}; uselog2=true)
 end
 
 #Calculate the degeneracy of an entire oligo pool
+
+"""
+    pooled_degeneracy(pool)
+
+Calcualte the sum degeneracy of pool.
+"""
 function pooled_degeneracy(pool)
     deg=0;
     for randomer in pool
@@ -107,6 +103,12 @@ end
 #Determine if two oligos contain at least one common sequence. Used for assessing ambigous oligos. 
 #Extends the iscompatible function in the BioSequences package from bases to sequences.
 #The two sequences must be the same length, otherwise the function returns false 
+
+"""
+    iscompatible(seq_A::LongSequence{DNAAlphabet{4}},seq_B::LongSequence{DNAAlphabet{4}})
+
+Check if seq_A and seq_B contain at least one common sequence. Seq_A and Seq_B must be the same length.
+"""
 function iscompatible(seq_A::LongSequence{DNAAlphabet{4}},seq_B::LongSequence{DNAAlphabet{4}})
     if length(seq_A) == length(seq_B)
         return prod(iscompatible.(seq_A,seq_B))
@@ -117,6 +119,12 @@ end
 
 #Decompress an ambiguous oligo into all of its possible sequences. Input is a single oligo.
 #
+"""
+    decompress_oligo(comp_oligo)
+
+Expand a degnerate oligo into the non-degnerate oligos it defines. 
+"""
+
 function decompress_oligo(compressed_oligo::LongSequence{DNAAlphabet{4}})
     basedict=Dict(DNA_A => dna"A", DNA_T => dna"T", DNA_C => dna"C", DNA_G => dna"G",DNA_R =>dna"AG",DNA_Y=>dna"CT",DNA_S=>dna"GC",
     DNA_W=>dna"AT",DNA_K=>dna"GT",DNA_M=>dna"AC",DNA_B=>dna"CGT",DNA_D=>dna"AGT",DNA_H=>dna"ACT",DNA_V=>dna"ACG",DNA_N=>dna"ACGT",DNA_Gap=>dna"-")
@@ -148,6 +156,11 @@ function decompress_oligo(compressed_oligo::LongSequence{DNAAlphabet{4}})
     return uncompressed_oligos
 end
 
+"""
+    decompress_pool(compressed_pool)
+
+Expand a pool of degenerate oligos into a single pool of non-degnerate oligos. 
+"""
 function decompress_pool(compressed_pool)
     decompressed_pool=decompress_oligo(compressed_pool[1])
     for i = 2:length(compressed_pool)
@@ -161,6 +174,12 @@ end
 
 #Generate a random pool without replacement. Specify the randomer length, the size of the pool, and the available nucleotides.
 #It can create ambiguous sequences, but it is possible that unique sequences will appear multiple times.
+
+"""
+    generate_random_pool(;randomerlen=6,randpoolsize=100,nucleotides=dna"ACGT")
+
+Generate a random pool of oligos with length=randomerlen and pool size=randpoolsize using nucleotides
+"""
 function generate_random_pool(;randomerlen=6,randpoolsize=100,nucleotides=dna"ACGT")
     randpool=[]
     randomer=dna"-"^randomerlen
@@ -194,6 +213,12 @@ function generate_random_pool(;randomerlen=6,randpoolsize=100,nucleotides=dna"AC
 end 
 
 # Given a pool of sequences all of length n, find all of the unambiguous sequences of length n that don't appear in that pool.
+
+"""
+    valid_candidates(sites)
+
+Find all non-degenerate oligos that don't appear in sites. All oligos in sites must be of equal length.
+"""
 function valid_candidates(sites)
     lengths=length.(sites)
     if all(lengths[1].==lengths)
@@ -213,6 +238,12 @@ end
 # Given a list of valid candidates, determine the action space of those candidates. For each base position, return a list of compatible nucleotides. 
 # If for example, the first postion does not contain an A or a T in any of the valid candidates, then the action space for that base position is dna"GCS". 
 #returns bases, an array of dna sequences containing all of the valid actions for the agent to take at each position. 
+
+"""
+    define_action_space(candidates)
+
+Find the available base codes for an oligo, such that only codes that appear in candidates at each postion are included.
+"""
 function define_action_space(candidates)
     if length(candidates)==0
         bases=[dna"" for i in 1:6]
@@ -257,6 +288,12 @@ function define_action_space(candidates)
 end 
 
 #given a list of base codes, return all of the base codes that do not contain any of those codes
+
+""" 
+    omit_codes(bases)
+
+Helper function for define_action_space. 
+"""
 function omit_codes(bases::LongSequence{DNAAlphabet{4}})
     testcodes=dna"AGCTMRWSYKVHDBN"
     testcodes_copy=deepcopy(testcodes)
@@ -288,7 +325,7 @@ end
 """
     isvalid(seq, sites)
 
-Check if any of the sites appear in the sequence. Also check for palindromes by calling is palindrom
+Check if any of the sites appear in the sequence. Also check for palindromes.
 
 """
 function isvalid(seq, sites)
@@ -516,7 +553,21 @@ function calculate_DULQ_score(array)
     end 
     return DULQ_score
 end 
+"""
+    mRNA_all_rewards_function_factory(randomer::LongSequence{DNAAlphabet{4}},mRNAs,hitcounts,hit_positions;genes_hit_weight=1,intrauniformity_weight=0,total_hits_weight=0,interuniformity_weight=0,kwargs...)
 
+Create reward and analysis functions to be used during rollout simulation.    
+
+# Arguments
+- `randomer`: Oligo to be added to the pool. The previously chosen cadidate.
+- `mRNAs`: Array of mRNA sequences to be hit by NSR primers
+- `hitcounts`: For each mRNA, the number of hits from previous oligos. 
+- `hit_positions`: For each mRNA, the index of each hit from previous oligos
+- `genes_hit_weight=1`: Weight for hitting every gene at least once 
+- `total_hits_weight=0`: Weight for maximizing total hits
+- `interuniformity_weight=0`: Weight for distributing equal numbers of hits to each gene
+- `intrauniformity_weight=0`: Weight for placing hits uniformly along each gene. If 0, we do not track hit positions to reduce unnecessary computation.
+"""
 function mRNA_all_rewards_function_factory(randomer::LongSequence{DNAAlphabet{4}},mRNAs,hitcounts,hit_positions;genes_hit_weight=1,intrauniformity_weight=0,total_hits_weight=0,interuniformity_weight=0,kwargs...)
     if intrauniformity_weight==0  # we will only track the hit positions if the intrauniformity score matters. This will save unnecessary computation
         hitcounts+=measure_hitcounts(randomer,mRNAs)
@@ -890,7 +941,7 @@ function run_NSR_RL(;species="S_mutans",randomerlen=6,pool_size=25,all_bases = d
     total_time=sum(times)
     string_time=join(times,",")
     string_num_blocked_sites=join(num_blocked_sites,",")
-    string_randomers=join(dnaarray2stringarray(randomers),",")
+    string_randomers=join(convert.(String,randomers),",")
     data=DataFrame(poolsize=pool_size, primer_length=randomerlen, genes_hit_weight=genes_hit_weight, total_hits_weight=total_hits_weight,interuniformity_weight=interuniformity_weight,intrauniformity_weight=intrauniformity_weight,species=species,num_genes=numgenes,
         transcriptome_size=transcriptome_size,mRNA_GC=mRNA_GC,blocked_GC=rRNA_GC,randomers=string_randomers,degeneracy=totaldeg,num_genes_hit=genes_hit,
         genes_missing=missing_IDs,total_hits=total_hits,interuniformity_score=interuniformity_score,intrauniformity_score=intrauniformity_score,individual_times=string_time,time=total_time,num_blocked_sites=string_num_blocked_sites,final_score=final_score)
@@ -940,7 +991,7 @@ function analyze_NSR_Pool(randomers;species="S_mutans",mRNAfile="./SMU_UA159_Gen
     totaldeg=pooled_degeneracy(randomers)
     total_time=0
     string_time="N/A"
-    string_randomers=join(dnaarray2stringarray(randomers),",")
+    string_randomers=join(convert.(String,randomers),",")
     genes_hit_weight=0
     total_hits_weight=0
     interuniformity_weight=0
@@ -956,7 +1007,7 @@ function analyze_all_genomes_NSR_Pools(species_list)
     DF1=DataFrame()
     n=length(species_list)
     for i = 1:n
-        randomers=stringarray2dnaarray(CSV.read(string("./Brute Force Pools V2 Compressed/",species_list[i],"_NSR_Brute_Force_Compressed.csv"),DataFrame)[:Sequence])
+        randomers=LongDNASeq.(CSV.read(string("./Brute Force Pools V2 Compressed/",species_list[i],"_NSR_Brute_Force_Compressed.csv"),DataFrame)[:Sequence])
         mRNAfile=string("./Genome Data/",species_list[i],"_Genes.csv")
         rRNAfile=string("./Genome Data/",species_list[i],"_rRNA_tRNA.csv")
         data=analyze_NSR_Pool(randomers;species=species_list[i],mRNAfile=mRNAfile,rRNAfile=rRNAfile)
@@ -969,7 +1020,7 @@ function analyze_all_genomes_NSR_Pools(species_list)
     
 end 
 function analyze_NSR_Pool_gene_coverage(species_name)
-    randomers=stringarray2dnaarray(CSV.read(string("./Brute Force Pools V2/",species_name,"_NSR_Brute_Force_all_randomers.csv"),DataFrame)[:Sequence])
+    randomers=LongDNASeq.(CSV.read(string("./Brute Force Pools V2/",species_name,"_NSR_Brute_Force_all_randomers.csv"),DataFrame)[:Sequence])
     mRNAfile=string("./Genome Data/",species_name,"_Genes.csv")
     data=gene_coverage_counts(randomers,mRNAfile);
     outputfile=string("./Brute Force Pools V2 Gene Coverage/",species_name,"_Gene_Coverage.csv")
@@ -987,7 +1038,7 @@ function analyze_cumulative_NSR_Pool(randomers,species_name;outputfile="./S_muta
     cumulative_interuniformity_score=zeros(nrandomers)
     cumulative_intrauniformity_score=zeros(nrandomers)
     randomer_num=1:nrandomers;
-    str_randomers=dnaarray2stringarray(randomers);
+    str_randomers=convert.(String,randomers);
     cumulative_genes_hit=zeros(nrandomers);
     hitcounts=zeros(length(mRNAs))
     hit_positions=[[] for _ in 1:length(mRNAs)]
@@ -1020,31 +1071,11 @@ function cumulative_runtime()
     CSV.write("NSR_pool_size_timing_6_23_21.csv",df)
     end 
 
-#data=run_NSR_RL(;nsims=100,poolsize=1)
-#CSV.write("NSR_RL_Prelims_Genome_Test_4_18_21.csv",data)
-#speciesdata=CSV.read("NSR_RL_Prelims_Genome_Test_4_18_21.csv",DataFrame)
-#SMUrandomers=stringarray2dnaarray(split(speciesdata[3,10],","));
-#countdata=gene_coverage_counts(SMUrandomers,"./E_coli_Genes_4_15_21.csv")
-#CSV.write("Ecoli_Coverage_Counts_4_18_21.csv",countdata)
 
-#species_list=CSV.read("./Genome Data/Species_List.csv")[:Species]
-#analyze_NSR_Pool_gene_coverage.(species_list)
 
-#species_list=CSV.read("./Genome Data/Species_List.csv")[:Species]
-#analyze_all_genomes_NSR_Pools(species_list)
+#data=CSV.read("NSR_RL/Brute Force Pools V2 Compressed/S_mutans_NSR_Brute_Force_Compressed.csv",DataFrame)
+#randomers=LongDNASeq.(data[:Sequence])
+#analyze_cumulative_NSR_Pool(randomers,"S_mutans";outputfile="./NSR_RL/Experiments/S_mutans_Cumulative_BF_Compressed.csv")
 
-#countdata=gene_coverage_counts(randomers,"./Genome Data/S_mutans_Genes.csv")
-#CSV.write("S_mutans_NSR_Comparison_2_gene_coverage_5-19-21.csv",countdata)
-#analyze_cumulative_NSR_Pool(randomers,"S_mutans";outputfile="./S_mutans_Cumulative_NSR_Pool_All_Rewards_6_22_21.csv")
-#data=CSV.read("S_mutans_NSR_CCD_6_30_21.csv",DataFrame)
-#randomers=stringarray2dnaarray(split(data[12,12],","))
-#randomers=filter(x -> degeneracy(x;uselog2=false)>0,randomers)
-#randomers=decompress_pool(randomers)
-#rcomps=reverse_complement.(randomers)
-#blocking_sites=read_blocking_sites(CSV.read("./Genome Data/S_mutans_rRNA_tRNA.csv",DataFrame));
-#sites=unique(vcat(blocking_sites,rcomps,randomers))
-#benchmark_NSR_RL()
 
-data=CSV.read("./NSR_RL/Brute Force Pools V2 Compressed/S_mutnas_Brute_Force_Compressed.csv",DataFrame)
-randomers=stringarray2dnaarray(data[:,1])
-analyze_cumulative_NSR_Pool(randomers,"S_mutans";outputfile="./NSR_RL/Experiments/S_mutans_Cumulative_BF_Compressed.csv")
+NSR_RL/Brute Force Pools V2 Compressed/S_mutans_NSR_Brute_Force_Compressed.csv
