@@ -230,8 +230,7 @@ function valid_candidates(sites)
         end 
         return candidates
     else 
-        println("provide an array of oligos of the same length")
-        return nothing
+        error("provide an array of oligos of the same length")
     end
 end  
 
