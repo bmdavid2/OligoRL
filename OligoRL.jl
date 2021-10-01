@@ -148,7 +148,7 @@ end
 
 
 # Run Monte Carlo simulations using a random base policy over a fixed horizon.
-function simulate_random(prefix, bases, sites; nsims=1000, horizon=length(bases), reward=degeneracy)
+function simulate_random(prefix, bases, sites; nsims=1000, horizon=length(bases), reward=degeneracy,kwargs...)
     sim_reward = zeros(nsims)
     true_horizon = min(horizon, length(bases)) # don't go beyond the randomer length
     for i = 1:nsims
@@ -158,7 +158,7 @@ function simulate_random(prefix, bases, sites; nsims=1000, horizon=length(bases)
 end
 
 # Run a 1-step greedy lookahead policy.
-function simulate_greedy(prefix, bases, sites; horizon=length(bases), reward=degeneracy)
+function simulate_greedy(prefix, bases, sites; horizon=length(bases), reward=degeneracy,kwargs...)
     true_horizon = min(horizon, length(bases)) # don't go beyond the randomer length
     for h = 1:true_horizon
         # Iterate through the bases by decending degeneracy, so the greedy approach
@@ -231,4 +231,7 @@ end
 randomerlen=10
 all_ns=dna"AGCTMRWSYKVHDBN"
 all_bases=[ all_ns for i =1:randomerlen]
+sites=[dna"------"];
+
+randomer=rollout(all_bases,sites;simulate=simulate_random,nsims=100,reward=degeneracy)
 
