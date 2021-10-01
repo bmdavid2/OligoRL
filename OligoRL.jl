@@ -145,13 +145,10 @@ end
 #OligoRL algorithm
 ###############
 
-#Reward function 
-function reward(randomer)
-    return degeneracy(randomer)
-end 
+
 
 # Run Monte Carlo simulations using a random base policy over a fixed horizon.
-function simulate_random(prefix, bases, sites; nsims=1000, horizon=length(bases))
+function simulate_random(prefix, bases, sites; nsims=1000, horizon=length(bases), reward=degeneracy)
     sim_reward = zeros(nsims)
     true_horizon = min(horizon, length(bases)) # don't go beyond the randomer length
     for i = 1:nsims
@@ -161,7 +158,7 @@ function simulate_random(prefix, bases, sites; nsims=1000, horizon=length(bases)
 end
 
 # Run a 1-step greedy lookahead policy.
-function simulate_greedy(prefix, bases, sites; horizon=length(bases))
+function simulate_greedy(prefix, bases, sites; horizon=length(bases), reward=degeneracy)
     true_horizon = min(horizon, length(bases)) # don't go beyond the randomer length
     for h = 1:true_horizon
         # Iterate through the bases by decending degeneracy, so the greedy approach
@@ -229,4 +226,9 @@ function rollout(bases::Array{LongSequence{DNAAlphabet{4}},1}, sites::Array{Long
 
     return randomer
 end
+
+
+randomerlen=10
+all_ns=dna"AGCTMRWSYKVHDBN"
+all_bases=[ all_ns for i =1:randomerlen]
 

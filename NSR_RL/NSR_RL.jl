@@ -371,7 +371,11 @@ end
 ############################################################
 #The follwoing functions are used as part of the various reward systems. They are called by each reward function when applicable  
 ###########################################################
+"""
+    measure_hitcounts(randomer::LongSequence{DNAAlphabet{4}},mRNAs) 
 
+For each mRNA, calculate the number of times the randomer appears in the sequence.
+"""
 function measure_hitcounts(randomer::LongSequence{DNAAlphabet{4}},mRNAs)
     mRNAnum=length(mRNAs);
     hitcounts=zeros(mRNAnum)
@@ -439,6 +443,12 @@ function mRNA_uniform_coverage_function_factory(randomer::LongSequence{DNAAlphab
     return mRNA_uniform_coverage,mRNA_uniform_coverage_analysis,hitcounts
 end 
 
+"""
+    measure_hit_positions(randomer::LongSequence{DNAAlphabet{4}},mRNAs)
+
+For every mRNA, measure the first index the randomer appears each time it appears. Store the indicies for each mRNA
+"""
+
 function measure_hit_positions(randomer::LongSequence{DNAAlphabet{4}},mRNAs)
     mRNAnum=length(mRNAs)
     hit_positions=[[] for _ =1:mRNAnum]
@@ -461,8 +471,14 @@ function measure_hit_positions(randomer::LongSequence{DNAAlphabet{4}},mRNAs)
     end 
     return hit_positions
 end 
+"""
+    calculate_gap_distances(hit_indicies,genelen)
 
-function calculate_gap_distances(hit_indicies,genelen,randomerlen)
+Calculate the distances between hit_indicies along the gene length (genelen)
+"""
+
+
+function calculate_gap_distances(hit_indicies,genelen)
     dists=[]
     if length(hit_indicies)>0  
         hit_indicies=sort(hit_indicies)
@@ -540,6 +556,15 @@ function mRNA_within_gene_uniformity_function_factory(randomer::LongSequence{DNA
     return mRNA_within_gene_uniformity,mRNA_within_gene_uniformity_analysis, hit_positions
 end 
 
+
+"""
+    calculate_DULQ_score(array)
+
+Calculate the Distribution Uniformity, Lower Quartile score of array 
+
+DULQ = mean(25th percentile of array)/mean(array)
+
+"""
 function calculate_DULQ_score(array)
     if length(array)==0
         DULQ_score=0
@@ -674,6 +699,20 @@ end
 #################################################
 # Simulation function. Call Reward functions and simulate a valid randomer 
 ##################################################
+
+"""
+    simulate(prefix,bases,sites,mRNAs,reward_function; nsims=1000, horizon=length(bases), kwargs...)
+
+Perfrom rollout simulations and score those simulations
+
+#Arguments
+- prefix: The established portion of the randomer along with the selected base to perform rollout on
+- bases: The remaining availabe base codes at each position to be chosen at random during simulation
+- mRNAs: mRNA sequences used for scoring 
+- reward function: scoring funciton to be used in evaluating random simulations
+- nsims=1000: number of simulations per rollout 
+- horizon: how far ahead to look with simulations
+"""
 function simulate(prefix,bases,sites,mRNAs,reward_function; nsims=1000, horizon=length(bases), kwargs...)
     rewards=zeros(nsims)
     true_horizon = min(horizon, length(bases))
@@ -693,6 +732,18 @@ end
 ########################################
 # Rollout Function
 #######################################
+
+"""
+    oligo_rollout(bases,sites, mRNA; reward_function=mRNA_uniform_coverage, kwargs...)
+
+Select a randomer using the rollout algorithm
+
+#Arguments
+- bases: Available base codes for each position of the desired randomer
+- sites: Array of sequences that aren't allowed in the randomer. Each site must be be the same length as the desired randomer
+- mRNA: Array of mRNA sequences the randomer is trying to capture
+-reward_function=mRNA_uniform_coverage: Reward funciton to be used by rollout algorithm. 
+"""
 function oligo_rollout(bases,sites, mRNA; reward_function=mRNA_uniform_coverage, kwargs...)
     n=length(bases)
     randomer= dna"-" ^ n
@@ -759,6 +810,12 @@ end
 #. For example, use list of rRNA and tRNA sequences. This funciton takes care of orientation. We end up using the reverse complement since we are finding primers that won't hybridize 
 ## Example
 #blocking_sites=read_blocking_sites(CSV.read("./SMU_UA159_rRNA_tRNA.csv"))
+
+"""
+    read_blocking_sites(data; randomerlen=6)
+
+Read in the list of unwanted sequences and store every unique randomerlen-mer reverse complement sequence. 
+"""
 function read_blocking_sites(data; randomerlen=6)
     blocking_sites=[];
     for i =1:nrow(data)
@@ -773,6 +830,12 @@ function read_blocking_sites(data; randomerlen=6)
 end 
 # RNAs=read_rRNA_tRNA_list(CSV.read("./SMU_UA159_rRNA_tRNA.csv"))
 #This function Does not hash up the rRNAs and tRNAs like read_blocking_sites does. That is the only difference
+
+"""
+    read_rRNA_tRNA_list(data)
+
+Read in the list of unwanted sequences and store every unique reverse_complement sequence 
+"""
 function read_rRNA_tRNA_list(data)
     RNAs=[]
     for i=1:nrow(data)
@@ -787,6 +850,12 @@ end
 # Function takes care of the orientation, we want to end up using the reverse complmement. 
 ## Example
 # mRNAs=read_mRNA_list(CSV.read("./SMU_UA159_Genes.csv"))
+
+"""
+    read_mRNA_list(data)
+
+Read in the list of target sequences and store every unique reverse_complement sequence 
+"""
 function read_mRNA_list(data)
     mRNAs=[]
     for i=1:nrow(data)
@@ -801,6 +870,11 @@ end
 #Finds the number of bases as well as the GC content of the given file 
 # Example 
 # bases,GC_content=calculate_transcriptome_stats(read_mRNA_list(CSV.read("./SMU_UA159_Genes.csv")))
+"""
+    calculate_transcriptome_stats(sequences)
+
+Find the number of bases and total GC content of sequences
+"""
 function calculate_transcriptome_stats(sequences)
     bases=0;  #number of bases in the file 
     GC_count=0 # Count of G's and C's in file
@@ -841,6 +915,12 @@ function base_error_dist(randomer,sites)
     return error_dist
 end
 
+
+"""
+    ID_genes_missing(data,genes_missing)
+
+Find the Gene_ID within data given the indicies of genes_missing
+"""
 function ID_genes_missing(data,genes_missing)
     missing_ID=[];
     for i in genes_missing
@@ -897,6 +977,20 @@ end
  #CSV.write("NSR_RL_S_mutans_4_12_21",data)
 
  #Input the Species name, the length of primer, and the size of the pool. 
+
+
+ """
+    run_NSR_RL(;species="S_mutans",randomerlen=6,pool_size=25,all_bases = dna"AGCTMRWSYKVHDBN",kwargs...)
+
+Select randomers to selectively prime reverse transcription 
+
+#Arguments
+- species="S_mutans": The species for which the primers will be designed. Used to extrat gene and rRNA_tRNA data from the Genome Data folder in the current directory
+- randomerlen=6: The length of the primers to be designed 
+- pool_size=25: The number of primers to be made 
+- all_bases=dna"AGCTMRWSYKVHDBN": The base set of available codes to be used for designing primers.
+
+ """
 function run_NSR_RL(;species="S_mutans",randomerlen=6,pool_size=25,all_bases = dna"AGCTMRWSYKVHDBN",kwargs...)
     
     #Intialization
@@ -1077,4 +1171,3 @@ function cumulative_runtime()
 #analyze_cumulative_NSR_Pool(randomers,"S_mutans";outputfile="./NSR_RL/Experiments/S_mutans_Cumulative_BF_Compressed.csv")
 
 
-NSR_RL/Brute Force Pools V2 Compressed/S_mutans_NSR_Brute_Force_Compressed.csv
