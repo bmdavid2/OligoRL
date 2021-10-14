@@ -329,27 +329,8 @@ function read_oligo_pool(data)
     end 
     return sites 
 end 
-## Check for duplicates 
+ 
 
-""" 
-    remove_duplicates(sites)
-
-Remove any duplicate sequences from sites. 
-"""
-function remove_duplicates(sites)
-    n=length(sites);
-    dup_sites=[];
-    for i = 2:n 
-        for j=1:i-1
-            if sites[i]==sites[j]
-                push!(dup_sites,i);
-                break
-            end 
-        end 
-    end
-    deleteat!(sites,dup_sites)
-    return sites 
-end 
 
 #Random pool generator for testing 
 """
@@ -386,7 +367,7 @@ function generate_random_pool(;randomerlen=6,randpoolsize=100,nucleotides=dna"AC
         end 
     end
     
-    return randpool      
+    return LongDNASeq.(randpool)      
 end 
 
 """
@@ -474,7 +455,7 @@ function generate_poissrnd_pool(;randomerlen=6,randpoolsize=4,desiredsize=16)
         end 
     end
     
-    return randpool      
+    return LongDNASeq.(randpool)     
 end 
 
 function poissrnd_degeneracy(lambda)
@@ -522,16 +503,18 @@ end
 
 ## Running function ##
 """
-    oligo_pool_compressor(randpool::Array{LongSequence{DNAAlphabet{4}},1};,nucleotides::Array{LongSequence{DNAAlphabet{4}},1};kwargs...)
+    oligo_pool_compressor(uncompressed_pool::Array{LongSequence{DNAAlphabet{4}},1},nucleotides::LongSequence{DNAAlphabet{4}}=dna"AGCTMRWSYKVHDBN";kwargs...)
 
-Compress a pool non-degenerate oligos into a smaller pool of degenerate oligos. 
+Compress an uncompresssed_pool of non-degenerate oligos into a smaller compresssed_pool of degenerate oligos. 
 
 # Arguments
-- `randpool`: A set of non-degenerate oligos to be compressed.
-- `nucleotides`: Base codes available to be used. 
+- `uncompressed_pool`: A set of non-degenerate oligos to be compressed.
+- `nucleotides=dna"AGCTMRWSYKVHDBN"`: Base codes available to be used. 
+# Common Keyword Arguments 
+- `nsims`: number of rollout simulations per action 
 """
-function oligo_pool_compressor(randpool::Array{LongSequence{DNAAlphabet{4}},1};,nucleotides::Array{LongSequence{DNAAlphabet{4}},1};kwargs...)
-    sites=remove_duplicates(randpool);
+function oligo_pool_compressor(uncompressed_pool::Array{LongSequence{DNAAlphabet{4}},1},nucleotides::LongSequence{DNAAlphabet{4}}=dna"AGCTMRWSYKVHDBN";kwargs...)
+    sites=unique(uncompressed_pool);
     original_poolsize=length(sites)
     compressed_pool=[]
     randomerlen=length(sites[1]);
@@ -626,7 +609,7 @@ end
 #data=benchmark_oligo_compressor(;nsims=100)
 
 function run_compression_experiment()
-    orig_pool=read_oligo_pool(CSV.read("./Oligo_Compressor/Experiments/Nature_2018_NSR_Primers.csv",DataFrame))
+    orig_pool=LongDNASeq.(CSV.read("./Oligo_Compressor/Experiments/Nature_2018_NSR_Primers.csv",DataFrame)[:Sequence])
     all_bases = dna"AGCTMRWSYKVHDBN"
     new_pool=oligo_pool_compressor(orig_pool,all_bases;nsims=100)
     data=DataFrame(randomers=new_pool)
@@ -636,4 +619,3 @@ function run_compression_experiment()
     filename="./Oligo_Compressor/Experiments/Nature_2018_NSR_Primers_Compressed.csv"
     CSV.write(filename,data)
 end
-#run_compression_experiment()
