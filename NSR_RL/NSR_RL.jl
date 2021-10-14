@@ -973,25 +973,31 @@ end
  ########################################################################
 
  #Quick Test#
- # data=run_NSR_RL(pool_size=3,nsims=50)
+ # data=NSR_RL(;pool_size=3,nsims=50)
  #CSV.write("NSR_RL_S_mutans_4_12_21",data)
 
  #Input the Species name, the length of primer, and the size of the pool. 
 
 
  """
-    run_NSR_RL(;species="S_mutans",randomerlen=6,pool_size=25,all_bases = dna"AGCTMRWSYKVHDBN",kwargs...)
+    NSR_RL(;species="S_mutans",randomerlen=6,pool_size=25,nucleotides = dna"AGCTMRWSYKVHDBN",kwargs...)
 
 Select randomers to selectively prime reverse transcription 
 
 #Arguments
-- species="S_mutans": The species for which the primers will be designed. Used to extrat gene and rRNA_tRNA data from the Genome Data folder in the current directory
-- randomerlen=6: The length of the primers to be designed 
-- pool_size=25: The number of primers to be made 
-- all_bases=dna"AGCTMRWSYKVHDBN": The base set of available codes to be used for designing primers.
+- `species="S_mutans"`: The species for which the primers will be designed. Used to extract gene and rRNA_tRNA data from the Genome Data folder in the current directory
+- `randomerlen=6`: The length of the primers to be designed 
+- `pool_size=25`: The number of primers to be made 
+- `nucleotides=dna"AGCTMRWSYKVHDBN"`: The base set of available codes to be used for designing primers.
 
+#Optional Keyword Arguments 
+- `nsims`: The number of rollout simulations per action
+- `genes_hit_weight`: Weight given to hitting each gene at least once in the reward function 
+- `total_hits_weight`: Weight given to maximizing the total number of hits 
+- `interuniformity_weight`: Weight given to placing hits equally across all genes
+- `intrauniformity_weight`: Weight given to placing hits equally within each gene 
  """
-function run_NSR_RL(;species="S_mutans",randomerlen=6,pool_size=25,all_bases = dna"AGCTMRWSYKVHDBN",kwargs...)
+function NSR_RL(;species="S_mutans",randomerlen=6,pool_size=25,nucleotides = dna"AGCTMRWSYKVHDBN",kwargs...)
     
     #Intialization
     randomers=[]
@@ -1006,7 +1012,7 @@ function run_NSR_RL(;species="S_mutans",randomerlen=6,pool_size=25,all_bases = d
     mRNAbp,mRNA_GC=calculate_transcriptome_stats(mRNAs);
     rRNAbp,rRNA_GC=calculate_transcriptome_stats(rRNAs);
     transcriptome_size=mRNAbp+rRNAbp;
-    all_ns = [all_bases for _ in 1:randomerlen];
+    all_ns = [nucleotides for _ in 1:randomerlen];
     times=[]
     num_blocked_sites=zeros(pool_size)
     println("Initialization Successful")
@@ -1051,14 +1057,14 @@ function benchmark_NSR_RL()
     species="S_mutans"
     filename="./S_mutans_NSR_Pool_7_22_21.csv"
     for i = 1:nexps
-        data=run_NSR_RL(;species=species,pool_size=100,nsims=100,genes_hit_weight=genes_hit_weights[i],total_hits_weight=total_hits_weights[i],interuniformity_weight=interuniformity_weights[i],intrauniformity_weight=intrauniformity_weights[i])
+        data=NSR_RL(;species=species,pool_size=100,nsims=100,genes_hit_weight=genes_hit_weights[i],total_hits_weight=total_hits_weights[i],interuniformity_weight=interuniformity_weights[i],intrauniformity_weight=intrauniformity_weights[i])
         DF1=vcat(DF1,data);
         CSV.write(filename,DF1)
     end 
 end
 
 
-##Code for analyzing previously made primer pools. stores the same data that run_NSR_RL stores 
+##Code for analyzing previously made primer pools. stores the same data that NSR_RL stores 
 function analyze_NSR_Pool(randomers;species="S_mutans",mRNAfile="./SMU_UA159_Genes.csv",rRNAfile="./SMU_UA159_rRNA_tRNA.csv",kwargs...)
     mRNAfile=string("./Genome Data/",species,"_Genes.csv")
     rRNAfile=string("./Genome Data/",species,"_rRNA_tRNA.csv")
