@@ -149,6 +149,8 @@ Run the rollout algorithm to solve the CutFree MDP.
 - `bases`: An array allowed bases at each postion, usually all 15 degenerate bases. Option is given because some companies restrict which degernate bases are allowed.
 - `sites`: An array of restriciton enzyme recognition sequences to be blocked in the random barcode. 
 - `simulate`: The choice of policy for rollout simulations. simulate_random will use a random rollout policy. simulate_greedy will use a greedy 1 step lookahead policy. 
+#Optional Keyword Arugments 
+- `nsims`: The number of rollout simulations per action
 """
 function cutfree_rollout(bases::Array{LongSequence{DNAAlphabet{4}},1}, sites::Array{LongSequence{DNAAlphabet{4}},1}; simulate=simulate_random, kwargs...)
     n = length(bases)
