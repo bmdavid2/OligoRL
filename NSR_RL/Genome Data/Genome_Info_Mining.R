@@ -470,9 +470,9 @@ save_single_chromosome=function(genome_accession,species_name){
 }
 
 #########################
-genome_accession= c("NZ_CP031781.1", "NZ_CP031782.1")#Input list of accession numbers
+genome_accession= c("NC_004350.2")#Input list of accession numbers separated by comma
 x=lapply(genome_accession,new_df_0_creation) #Output list where each element in the list is a list itself. Element 1 in this list is the rRNA/tRNA seqs and element 2 is the mRNA seqs.
-species_name="V_parahaemolyticus"
+species_name="S_mutans"
 suffix_gene="_Genes.csv"
 suffix_rRNA_tRNA="_rRNA_tRNA.csv"
 genefile=paste(species_name,suffix_gene,sep="")

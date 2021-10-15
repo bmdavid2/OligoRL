@@ -141,7 +141,7 @@ function simulate_greedy(prefix, bases, sites; horizon=length(bases))
 end
 
 """
-    cutfree_rollout(bases, sites; simulate=simulate_random, kwargs...)
+    cutfree_rollout(bases::Array{LongSequence{DNAAlphabet{4}},1}, sites::Array{LongSequence{DNAAlphabet{4}},1}; simulate=simulate_random, kwargs...)
 
 Run the rollout algorithm to solve the CutFree MDP. 
 
