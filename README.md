@@ -54,6 +54,16 @@ Users can design degenerate barcodes that lack specified restriction enzyme site
 ### Optional Keyword Arugments 
 - `nsims=1000`: The number of rollout simulations per action. Decreasing `nsims` results in faster runtimes but potentially decreases solution optimality. 
 
+### Running CutFreeRL with your own data
+```julia 
+randomer_length=10;
+bases=[dna"AGCTMRWSYKVHDBN" for i =1:randomer_length]
+sites=[dna"GGTCTC",dna"GAATTC",dna"AAGCTT"] #BsaI,EcoRI,HindIII
+randomer=cutfree_rollout(bases,sites; simulate=simulate_random,nsims=1000)
+
+
+```
+
 # OligoCompressor
 The OligoCompressor application is located in the `OligoCompressor` folder as `OligoCompressor.jl` Open the file and run the script containing the OligoCompressor functions to use the application .
 
@@ -72,6 +82,13 @@ Users can compress non-degenerate oligo pools into smaller degenerate pools usin
 - `nucleotides=dna"AGCTMRWSYKVHDBN"`: Nucleotide codes available to be used. Default is all 15.
 ### Optional Keyword Arguments 
 - `nsims=1000`: Number of rollout simulations per action.
+
+### Running OligoCompressor with your own data
+```julia 
+    uncompressed_pool=LongDNASeq.(CSV.read("mydata.csv",DataFrame)[:Sequence]) 
+    #Sequences stored in a .csv file under a header called "Sequence"
+    compressed_pool=oligo_pool_compressor(uncompressed_pool,nucleotides=dna"AGCTMRWSYKVHDBN";nsims=100)
+```
 
 
 # NSR-RL 
