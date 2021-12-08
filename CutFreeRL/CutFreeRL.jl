@@ -2,7 +2,7 @@
 
 import Base: *, sort
 using Random, Statistics, DataFrames, CSV
-using BioSequences, XLSX
+using BioSequences, XLSX,ArgParse
 
 # Overload the concatenation operator to combine a sequence and 
 # a single base, i.e. dna"AGCGTGC" * DNA_T
@@ -201,18 +201,18 @@ function cutfree_rollout(bases::Array{LongSequence{DNAAlphabet{4}},1}, sites::Ar
     return randomer
 end
 
+# Test code
+#all_bases = dna"AGCTMRWSYKVHDBN"
+#all_ns = [all_bases for _ in 1:40] # make a length 10 randomer
+#sites = [dna"GGTCTC"] # BsaI
 
-all_bases = dna"AGCTMRWSYKVHDBN"
-all_ns = [all_bases for _ in 1:40] # make a length 10 randomer
-sites = [dna"GGTCTC"] # BsaI
+#randomer = cutfree_rollout(all_ns, sites, simulate=simulate_random, nsims=1000)
+#randomer = cutfree_rollout(all_ns, sites, simulate=simulate_greedy)
 
-randomer = cutfree_rollout(all_ns, sites, simulate=simulate_random, nsims=1000)
-randomer = cutfree_rollout(all_ns, sites, simulate=simulate_greedy)
-
-deg = degeneracy(randomer)
-natdeg = deg / log2(exp(1))
-println("Final randomer: $randomer")
-println("Final degeneracy: $deg ($natdeg)")
+#deg = degeneracy(randomer)
+#natdeg = deg / log2(exp(1))
+#println("Final randomer: $randomer")
+#println("Final degeneracy: $deg ($natdeg)")
 
 # Run the benchmark CutFree set
 function runtimes(data)
@@ -272,6 +272,50 @@ function random_subset(data;size=10)
     end 
 end
 
+function parse_commandline()
+    s = ArgParseSettings()
 
+    @add_arg_table s begin
+        "--sequence","-s"
+            help="Starting DNA sequence that should be blocked from containing restriction sites. To generate a set of barcodes with the highest diversity, start with a string of N's the length of your oligo. "
+            required=true   
+        "--restrictionsites","-r"
+            help = "Sequences to block from the oligo pools. Separate multiple sequences by commas. Do not include spaces."
+            required=true
+        "--nsims","-n"
+            help = "Number of simulations per rollout"
+            arg_type= Int
+            default=100
+    end
+
+    return parse_args(s)
+end
+
+function main()
+    parsed_args = parse_commandline()
+    println("Parsed args:")
+    for (arg,val) in parsed_args
+        println("  $arg  =>  $val")
+    end
+
+    allowedbasedict=Dict(DNA_A => dna"A", DNA_T => dna"T", DNA_C => dna"C", DNA_G => dna"G",DNA_R =>dna"AG",DNA_Y=>dna"CT",DNA_S=>dna"GC",
+    DNA_W=>dna"AT",DNA_K=>dna"GT",DNA_M=>dna"AC",DNA_B=>dna"CGTYSKB",DNA_D=>dna"AGTRWKD",DNA_H=>dna"ACTYWMH",DNA_V=>dna"ACGRSMV",DNA_N=>dna"ACGTRYSWKMBDHVN",DNA_Gap=>dna"-")
+    sequence=parsed_args["sequence"]
+    sites=parsed_args["restrictionsites"]
+    nsims=parsed_args["nsims"]
+    sequence=LongDNASeq.(sequence)
+    bases=[dna"-" for i=1:length(sequence)]
+    for i=1:length(sequence)
+        bases[i]=allowedbasedict[sequence[i]]
+    end 
+    sites=LongDNASeq.(split(sites,","))
+    randomer=cutfree_rollout(bases,sites;nsims=nsims)
+    randomer=String(randomer)
+    show(stdout,"text/plain",randomer)
+    println("\n")
+end
+
+
+main()
 
 
