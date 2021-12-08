@@ -25,6 +25,7 @@ add CSV
 add Biosequences
 add DataFrames
 add XLSX
+add ArgParse
 ```
 
 # CutFreeRL 
@@ -65,19 +66,15 @@ randomer=cutfree_rollout(bases,sites; simulate=simulate_random,nsims=1000)
 ```
 
 # OligoCompressor
-The OligoCompressor application is located in the `OligoCompressor` folder as `OligoCompressor.jl` Open the file and run the script containing the OligoCompressor functions to use the application .
+The OligoCompressor application is located in the `OligoCompressor` folder as `OligoCompressor.jl` To use OligoCompressor on your own data, we have created a command line interface.
 
-Users can compress non-degenerate oligo pools into smaller degenerate pools using the `oligo_pool_compressor` function. `oligo_pool_compressor` returns an array of degenerate oligos that exactly capture the input pool
-
-```julia 
-    oligo_pool_compressor(uncompressed_pool,nucleotides=dna"AGCTMRWSYKVHDBN";kwargs...)
+``` 
+$ julia OligoCompressor.jl -targetpool mysequences.txt 
 ```
 
-### Arguments
-- `uncompressed_pool`: A set of non-degenerate oligos to be compressed.
-```julia
-    uncompressed_pool=[dna"AGGCTA",dna"ACGCTA",dna"CTACGT",dna"CTAGGT",dna"TTTGCA"]
-```
+### Required Arguments
+- `targetpool`: A text file containing a set of non-degenerate oligos to be compressed. An example file called `test_seqs.text` is located in the `OligoCompressor` folder
+
 ### Optional Arguments
 - `nucleotides=dna"AGCTMRWSYKVHDBN"`: Nucleotide codes available to be used. Default is all 15.
 ### Optional Keyword Arguments 
