@@ -69,23 +69,19 @@ randomer=cutfree_rollout(bases,sites; simulate=simulate_random,nsims=1000)
 The OligoCompressor application is located in the `OligoCompressor` folder as `OligoCompressor.jl` To use OligoCompressor on your own data, we have created a command line interface.
 
 ``` 
-$ julia OligoCompressor.jl -targetpool mysequences.txt 
+$ julia OligoCompressor.jl --targetpool mysequences.txt 
 ```
 
 ### Required Arguments
-- `targetpool`: A text file containing a set of non-degenerate oligos to be compressed. An example file called `test_seqs.text` is located in the `OligoCompressor` folder
+- `--targetpool`,`-t`: A text file containing a set of non-degenerate oligos to be compressed. An example file called `test_seqs.text` is located in the `OligoCompressor` folder
 
 ### Optional Arguments
-- `nucleotides=dna"AGCTMRWSYKVHDBN"`: Nucleotide codes available to be used. Default is all 15.
-### Optional Keyword Arguments 
-- `nsims=1000`: Number of rollout simulations per action.
+- `--output`,`-o`: Output .txt file name. The compressed sequences will print if no input is given
+- `--bases`,`-b =dna"AGCTMRWSYKVHDBN"`: Nucleotide codes available to be used. Default is all 15.
+ 
+- `--nsims`,`-n =1000`: Number of rollout simulations per action.
 
-### Running OligoCompressor with your own data
-```julia 
-    uncompressed_pool=LongDNASeq.(CSV.read("mydata.csv",DataFrame)[:Sequence]) 
-    #Sequences stored in a .csv file under a header called "Sequence"
-    compressed_pool=oligo_pool_compressor(uncompressed_pool,nucleotides=dna"AGCTMRWSYKVHDBN";nsims=100)
-```
+
 
 
 # NSR-RL 
