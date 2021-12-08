@@ -1,6 +1,6 @@
 import Base: *, sort
 using Random, Statistics, DataFrames, CSV
-using BioSequences, FASTX, XLSX, CPUTime
+using BioSequences, ArgParse
 import BioSequences: iscompatible
 
 #The following functions are the base set of tools that this program uses 
@@ -619,3 +619,58 @@ function run_compression_experiment()
     filename="./Oligo_Compressor/Experiments/Nature_2018_NSR_Primers_Compressed.csv"
     CSV.write(filename,data)
 end
+
+
+
+function parse_commandline()
+    s = ArgParseSettings()
+
+    @add_arg_table s begin
+        "--targetpool","-t"
+            help = "Target pool input "
+            required = true
+        "--bases", "-b"
+            help = "Allowed base codes"
+            default = "AGCTMRWSYKVHDBN"
+        "--output","-o"
+            help = "Output file name"
+        "--nsims","-n"
+            help = "Number of simulations per rollout"
+            arg_type= Int
+            default=100
+    end
+
+    return parse_args(s)
+end
+
+function main()
+    parsed_args = parse_commandline()
+    println("Parsed args:")
+    for (arg,val) in parsed_args
+        println("  $arg  =>  $val")
+    end
+    file=parsed_args["targetpool"]
+    allowed_ns=parsed_args["bases"]
+    outfile=parsed_args["output"]
+    nsims=parsed_args["nsims"]
+    f=open(file,"r")
+    target_pool=readlines(f)
+    close(f)
+    target_pool=LongDNASeq.(target_pool)
+    allowed_ns=LongDNASeq.(allowed_ns)
+    compressed_pool=oligo_pool_compressor(target_pool,allowed_ns;nsims=nsims)
+    compressed_pool=String.(compressed_pool)
+    if outfile===nothing 
+        show(stdout,"text/plain",compressed_pool)
+        println("\n")
+    else
+        f=open(outfile,"w")
+        for seq in compressed_pool
+            println(f,seq)
+        end 
+        close(f)
+    end 
+end
+
+
+main()
