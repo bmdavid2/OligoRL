@@ -13,10 +13,10 @@ A Reinforcemnt Learning Framework for Pooled Oligonucleotide Design. Solve oligo
 
 OligoRL has three associated tools: 
 - CutFreeRL: finds degenerate barcodes that lack specified restriction enzyme sites
-- OligoCompressor: compresses a set of individual oligos into a smaller set of degenerate ones 
+- OligoCompressor: compresses a set of non-degenerate oligos into a smaller set of degenerate ones 
 - NSR-RL: creates semi-random hexamers that avoid rRNA when preparing RNA-seq libraries
 # Instructions to Use OligoRL 
-Each software application exists as a standalone Julia file containing all of the necessary functions to run the application. Requires installation of  [Julia](https://julialang.org/downloads/). Once Julia is installed. Install the dependent Julia Packages. Navigate to package mode by pressing `]` 
+Each software application is a standalone Julia file containing all of the necessary functions to run the application. Requires installation of  [Julia](https://julialang.org/downloads/). Once Julia is installed. Install the dependent Julia Packages. Navigate to package mode by pressing `]` 
 
 ```julia 
 add Random
@@ -29,41 +29,23 @@ add ArgParse
 ```
 
 # CutFreeRL 
-The CutFreeRL application is located in the `CutFreeRL` folder as `CutFreeRL.jl`. Open the file and run the script containing the CutFreeRL functions to use the application.
-
-Users can design degenerate barcodes that lack specified restriction enzyme sites using the `cutfree_rollout` function. `cutfree_rollout` returns a single degenerate randomer.
+The CutFreeRL application is located in the `CutFreeRL` folder as `CutFreeRL.jl`. CutFree is available as a web-tool at the [Jensen Lab website](http://jensenlab.net/tools/). We have also created a command line interface for the CutFreeRL implementation.
 
 
-```julia
-    cutfree_rollout(bases, sites; simulate=simulate_random, kwargs...)
+```
+$ julia CutFreeRL.jl -sequence NNNNNNNNNNN -restrictionsites GGTCTC,GGCCGG -nsims 1000
 ```
  
 
-### Arguments 
-- `bases`: An array of allowed bases at each postion, usually all 15 degenerate bases. Option is given because some companies restrict which degernate bases are allowed. This is also how to specify the desired randomer length.
-#### Example
-```julia 
-    bases=[dna"AGCTMRWSYKVHDBN" for i =1:10] #Make a 10-mer using all codes
-```
-- `sites`: An array of restriciton enzyme recognition sequences to be blocked in the random barcode. Encoded as 5' -> 3'.
-#### Example
-```julia
-    sites=[dna"GGTCTC",dna"GAATTC",dna"AAGCTT"] #BsaI,EcoRI,HindIII
-```
-- `simulate`: The choice of policy for rollout simulations. `simulate_random` will use a random rollout policy. `simulate_greedy` will use a greedy 1 step lookahead policy. 
+### Required Arguments 
+- `--sequence`,`-s`: Starting DNA sequence that should be blocked from containing restriction sites. To generate a set of barcodes with the highest diversity, start with a string of N's the length of your oligo. 
 
-### Optional Keyword Arugments 
-- `nsims=1000`: The number of rollout simulations per action. Decreasing `nsims` results in faster runtimes but potentially decreases solution optimality. 
-
-### Running CutFreeRL with your own data
-```julia 
-randomer_length=10;
-bases=[dna"AGCTMRWSYKVHDBN" for i =1:randomer_length]
-sites=[dna"GGTCTC",dna"GAATTC",dna"AAGCTT"] #BsaI,EcoRI,HindIII
-randomer=cutfree_rollout(bases,sites; simulate=simulate_random,nsims=1000)
+- `-restrictionsites`,`-r`: Sequences to block from the oligo pools. Separate multiple sequences by commas. Do not include spaces.
 
 
-```
+### Optional Arugments 
+- `--nsims`,`-n =1000`: The number of rollout simulations per action. Decreasing `nsims` results in faster runtimes but potentially decreases solution optimality. 
+
 
 # OligoCompressor
 The OligoCompressor application is located in the `OligoCompressor` folder as `OligoCompressor.jl` To use OligoCompressor on your own data, we have created a command line interface.
@@ -128,7 +110,7 @@ suffix_rRNA_tRNA="_rRNA_tRNA.csv"
 
 
 # Instructions to Replicate Published Data 
-We provide pre-written scripts to generate the data shown in each of the figures. Requires installations of [R](https://www.rstudio.com/products/rstudio/download/) ,  [Julia](https://julialang.org/downloads/), and [Gurobi Optimizer](https://www.gurobi.com) (For replicating the original [CutFree](https://jensenlab.shinyapps.io/cutfree/) data only). While not required, it is helpful to have a text editing IDE installed such as VScode or atom. 
+We provide pre-written scripts to generate the data shown in each of the figures. Requires installations of [R](https://www.rstudio.com/products/rstudio/download/) ,  [Julia](https://julialang.org/downloads/), and [Gurobi Optimizer](https://www.gurobi.com) (For replicating the original [CutFree](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5762418/) data only). While not required, it is helpful to have a text editing IDE installed such as VScode or atom. 
 
 ### 1. Install required R and Julia Packages 
 Install R Packages
