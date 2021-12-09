@@ -1,7 +1,7 @@
 #################################################################
 ##########Genome Information Mining, mRNA and rRNA###############
 #################################################################
-
+## Written by RMW ###
  #install.packages("BiocManager")
  #BiocManager::install("genbankr")
  #install.packages("devtools")
@@ -24,6 +24,7 @@ library(corrplot)
 library(reshape2)
 library(phylotools)
 library(rentrez)
+library(argparse)
 
 transcript_sequence_finder=function(genome,gene){ #The purpose of this function is to determine the sequence 5'->3' of the coding strand for a gene (what mRNA will look like)
   seq=as.character(genome@sequence[1])
@@ -469,22 +470,39 @@ save_single_chromosome=function(genome_accession,species_name){
   write.csv(x[[1]][[2]],genefile)
 }
 
+
+# create parser object
+parser <- ArgumentParser()
+
+# specify our desired options 
+# by default ArgumentParser will add an help option 
+parser$add_argument("-a", "--accession",
+                    help="Input Accession Number(s). Separate by comma with no spaces.")
+parser$add_argument("-n", "--name", help="Provide the Species name. ex. E_coli")
+
+
+# get command line options, if help option encountered print help and exit,
+# otherwise if options not found on command line then set defaults, 
+
 #########################
-genome_accession= c("NC_004350.2")#Input list of accession numbers separated by comma
-x=lapply(genome_accession,new_df_0_creation) #Output list where each element in the list is a list itself. Element 1 in this list is the rRNA/tRNA seqs and element 2 is the mRNA seqs.
-species_name="S_mutans"
-suffix_gene="_Genes.csv"
-suffix_rRNA_tRNA="_rRNA_tRNA.csv"
-genefile=paste(species_name,suffix_gene,sep="")
-rRNA_tRNAfile=paste(species_name,suffix_rRNA_tRNA,sep="")
-genedata=data.frame()
-rRNA_tRNAdata=data.frame()
-for (i in 1:length(genome_accession)){
+
+main=function()
+  args <- parser$parse_args()
+  genome_accession= c("NC_004350.2")#Input list of accession numbers separated by comma
+  x=lapply(genome_accession,new_df_0_creation) #Output list where each element in the list is a list itself. Element 1 in this list is the rRNA/tRNA seqs and element 2 is the mRNA seqs.
+  species_name="S_mutans"
+  suffix_gene="_Genes.csv"
+  suffix_rRNA_tRNA="_rRNA_tRNA.csv"
+  genefile=paste(species_name,suffix_gene,sep="")
+  rRNA_tRNAfile=paste(species_name,suffix_rRNA_tRNA,sep="")
+  genedata=data.frame()
+  rRNA_tRNAdata=data.frame()
+  for (i in 1:length(genome_accession)){
   genedata =rbind(genedata,x[[i]][[2]])
   rRNA_tRNAdata=rbind(rRNA_tRNAdata,x[[i]][[1]])
-}
-write.csv(rRNA_tRNAdata,rRNA_tRNAfile)
-write.csv(genedata,genefile)
+  }
+  write.csv(rRNA_tRNAdata,rRNA_tRNAfile)
+  write.csv(genedata,genefile)
 
 
 
