@@ -643,15 +643,15 @@ function parse_commandline()
 end
 
 function main()
-    parsed_args = parse_commandline()
+    args = parse_commandline()
     println("Parsed args:")
-    for (arg,val) in parsed_args
+    for (arg,val) in args
         println("  $arg  =>  $val")
     end
-    infile=parsed_args["targetpool"]
-    allowed_ns=parsed_args["bases"]
-    outfile=parsed_args["output"]
-    nsims=parsed_args["nsims"]
+    infile=args["targetpool"]
+    allowed_ns=args["bases"]
+    outfile=args["output"]
+    nsims=args["nsims"]
     if infile ===nothing
         target_pool=readlines(stdin)
     else 
