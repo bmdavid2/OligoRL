@@ -628,7 +628,6 @@ function parse_commandline()
     @add_arg_table s begin
         "--targetpool","-t"
             help = "Target pool input "
-            required = true
         "--bases", "-b"
             help = "Allowed base codes"
             default = "AGCTMRWSYKVHDBN"
@@ -649,13 +648,17 @@ function main()
     for (arg,val) in parsed_args
         println("  $arg  =>  $val")
     end
-    file=parsed_args["targetpool"]
+    infile=parsed_args["targetpool"]
     allowed_ns=parsed_args["bases"]
     outfile=parsed_args["output"]
     nsims=parsed_args["nsims"]
-    f=open(file,"r")
-    target_pool=readlines(f)
-    close(f)
+    if infile ===nothing
+        target_pool=readlines(stdin)
+    else 
+        f=open(infile,"r")
+        target_pool=readlines(f)
+        close(f)
+    end 
     target_pool=LongDNASeq.(target_pool)
     allowed_ns=LongDNASeq.(allowed_ns)
     compressed_pool=oligo_pool_compressor(target_pool,allowed_ns;nsims=nsims)
