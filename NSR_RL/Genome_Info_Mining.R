@@ -471,14 +471,6 @@ save_single_chromosome=function(genome_accession,species_name){
 }
 
 
-# create parser object
-parser <- ArgumentParser()
-
-# specify our desired options 
-# by default ArgumentParser will add an help option 
-parser$add_argument("-a", "--accession",
-                    help="Input Accession Number(s). Separate by comma with no spaces.")
-parser$add_argument("-n", "--name", help="Provide the Species name. ex. E_coli")
 
 
 # get command line options, if help option encountered print help and exit,
@@ -486,11 +478,8 @@ parser$add_argument("-n", "--name", help="Provide the Species name. ex. E_coli")
 
 #########################
 
-main=function()
-  args <- parser$parse_args()
-  genome_accession= c("NC_004350.2")#Input list of accession numbers separated by comma
+retrieve_genome=function(species_name,genome_accession){
   x=lapply(genome_accession,new_df_0_creation) #Output list where each element in the list is a list itself. Element 1 in this list is the rRNA/tRNA seqs and element 2 is the mRNA seqs.
-  species_name="S_mutans"
   suffix_gene="_Genes.csv"
   suffix_rRNA_tRNA="_rRNA_tRNA.csv"
   genefile=paste(species_name,suffix_gene,sep="")
@@ -503,6 +492,8 @@ main=function()
   }
   write.csv(rRNA_tRNAdata,rRNA_tRNAfile)
   write.csv(genedata,genefile)
+}
+
 
 
 
