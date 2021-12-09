@@ -2,11 +2,11 @@
 ##########Genome Information Mining, mRNA and rRNA###############
 #################################################################
 ## Written by RMW ###
- #install.packages("BiocManager")
- #BiocManager::install("genbankr")
- #install.packages("devtools")
-# devtools::install_github("jensenlab/primer3")
-#devtools::install_github("mhahsler/rBLAST")
+#install.packages("BiocManager")
+#BiocManager::install("genbankr")
+install.packages("devtools")
+devtools::install_github("jensenlab/primer3")
+devtools::install_github("mhahsler/rBLAST")
 
 library(genbankr)
 library(primer3)
@@ -24,7 +24,7 @@ library(corrplot)
 library(reshape2)
 library(phylotools)
 library(rentrez)
-library(argparse)
+
 
 transcript_sequence_finder=function(genome,gene){ #The purpose of this function is to determine the sequence 5'->3' of the coding strand for a gene (what mRNA will look like)
   seq=as.character(genome@sequence[1])

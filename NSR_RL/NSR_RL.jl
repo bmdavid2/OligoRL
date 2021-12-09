@@ -1,6 +1,6 @@
 import Base: *, sort
 using Random, Statistics, DataFrames, CSV
-using BioSequences
+using BioSequences,RCall,ArgParse
 import BioSequences: iscompatible
 
 ################################################
@@ -980,14 +980,15 @@ end
 
 
  """
-    NSR_RL(;species="S_mutans",randomerlen=6,pool_size=25,nucleotides = dna"AGCTMRWSYKVHDBN",kwargs...)
+    NSR_RL(species,mRNAfile,rRNAfile,randomerlen,pool_size,nucleotides = dna"AGCTMRWSYKVHDBN";kwargs...)
 
 Select randomers to selectively prime reverse transcription 
 
 #Arguments
-- `species="S_mutans"`: The species for which the primers will be designed. Used to extract gene and rRNA_tRNA data from the Genome Data folder in the current directory
-- `randomerlen=6`: The length of the primers to be designed 
-- `pool_size=25`: The number of primers to be made 
+- `mRNAfile`: The CSV file from Genome_Info_Mining that contains the mRNA sequences 
+- `rRNAtRNAfile`: The CSV file from Geneom_Info_Mining that contains the rRNA/tRNA sequences
+- `randomerlen`: The length of the primers to be designed 
+- `pool_size`: The number of primers to be made 
 - `nucleotides=dna"AGCTMRWSYKVHDBN"`: The base set of available codes to be used for designing primers.
 
 #Optional Keyword Arguments 
@@ -997,12 +998,10 @@ Select randomers to selectively prime reverse transcription
 - `interuniformity_weight`: Weight given to placing hits equally across all genes
 - `intrauniformity_weight`: Weight given to placing hits equally within each gene 
  """
-function NSR_RL(;species="S_mutans",randomerlen=6,pool_size=25,nucleotides = dna"AGCTMRWSYKVHDBN",kwargs...)
+function NSR_RL(species,mRNAfile,rRNAfile,randomerlen,pool_size,nucleotides = dna"AGCTMRWSYKVHDBN";kwargs...)
     
     #Intialization
     randomers=[]
-    mRNAfile=string("./Genome Data/",species,"_Genes.csv")
-    rRNAfile=string("./Genome Data/",species,"_rRNA_tRNA.csv")
     mRNA_DF=CSV.read(mRNAfile,DataFrame);
     rRNA_DF=CSV.read(rRNAfile,DataFrame);
     mRNAs=read_mRNA_list(mRNA_DF);
@@ -1047,133 +1046,111 @@ function NSR_RL(;species="S_mutans",randomerlen=6,pool_size=25,nucleotides = dna
     return data 
 end 
 
-function benchmark_NSR_RL()
-    DF1=DataFrame()
-    nexps=1;
-    genes_hit_weights=[1]
-    total_hits_weights=[1e-4]
-    interuniformity_weights=[1]
-    intrauniformity_weights=[1]
-    species="S_mutans"
-    filename="./S_mutans_NSR_Pool_7_22_21.csv"
-    for i = 1:nexps
-        data=NSR_RL(;species=species,pool_size=100,nsims=100,genes_hit_weight=genes_hit_weights[i],total_hits_weight=total_hits_weights[i],interuniformity_weight=interuniformity_weights[i],intrauniformity_weight=intrauniformity_weights[i])
-        DF1=vcat(DF1,data);
-        CSV.write(filename,DF1)
-    end 
+
+
+
+
+function parse_commandline()
+    s = ArgParseSettings()
+
+    @add_arg_table s begin
+        "--accession","-a"
+            help = "Geneome Accesion number. Separate multiple accession numbers by comma wiht no spaces"
+        "--species", "-s"
+            help = "species name"
+            default = "AGCTMRWSYKVHDBN"
+            required = true 
+        "--genefile"
+            help = "gene file name"
+        "--rRNAtRNAfile"
+            help = "rRNA/tRNA file name"
+        "--nsims","-n"
+            help = "Number of simulations per rollout"
+            arg_type= Int
+            default=100
+        "--genes_hit_weight" 
+            help = "Weight given to the reward for hitting every gene at least once"
+            default=1
+        "--total_hits_weight"
+            help = "Weight given to the reward for maximizing total hits"
+            default=1
+        "--intrauniformity_weight"
+            help = "Weight given to placing hits uniformly between genes"
+            default=1
+        "--interuniformity_weight"
+            help = "Weight given to placing hits uniformly within genes"
+            default=1
+        "--bases","-b" 
+            help = "Available base codes for the primers to contain. default=AGCTMRWSYKVHDBN" 
+            default= "AGCTMRWSYKVHDBN"
+        "--length_primers","-l" 
+            help = "Primer Length. Default=6"
+            default=6
+        "--poolsize","-p"
+            help= "Size of primer pool"
+            arg_type=Int
+            required=true
+        "--outfile","-o"
+            help="Output file names"
+
+    end
+
+    return parse_args(s)
 end
 
 
-##Code for analyzing previously made primer pools. stores the same data that NSR_RL stores 
-function analyze_NSR_Pool(randomers;species="S_mutans",mRNAfile="./SMU_UA159_Genes.csv",rRNAfile="./SMU_UA159_rRNA_tRNA.csv",kwargs...)
-    mRNAfile=string("./Genome Data/",species,"_Genes.csv")
-    rRNAfile=string("./Genome Data/",species,"_rRNA_tRNA.csv")
-    mRNA_DF=CSV.read(mRNAfile,DataFrame);
-    rRNA_DF=CSV.read(rRNAfile,DataFrame);
-    mRNAs=read_mRNA_list(mRNA_DF);
-    rRNAs=read_rRNA_tRNA_list(rRNA_DF);
-    numgenes=length(mRNAs)
-    blocking_sites=read_blocking_sites(rRNA_DF,randomerlen=randomerlen);
-    randomerlen=length(randomers[1]);
-    mRNAbp,mRNA_GC=calculate_transcriptome_stats(mRNAs);
-    rRNAbp,rRNA_GC=calculate_transcriptome_stats(rRNAs);
-    transcriptome_size=mRNAbp+rRNAbp;
-    hitcounts=zeros(numgenes)
-    hit_positions=[[] for _ in 1:numgenes]
-    reward_function,analysis_function,hitcounts,hit_positions=mRNA_all_rewards_function_factory(dna"-"^randomerlen,mRNAs,hitcounts,hit_positions;genes_hit_weight=1,total_hits_weight=1,interuniformity_weight=1,intrauniformity_weight=1)
-    for i=1:length(randomers)
-        reward_function,analysis_function,hitcounts,hit_positions=mRNA_all_rewards_function_factory(randomers[i],mRNAs,hitcounts,hit_positions;genes_hit_weight=1,total_hits_weight=1,interuniformity_weight=1,intrauniformity_weight=1); #officially add hit positions from the new randomer 
+
+
+function main()
+    args = parse_commandline()
+    println("Parsed args:")
+    for (arg,val) in args
+        println("  $arg  =>  $val")
     end
-    final_score,hitcounts,hit_positions,genes_hit,total_hits,interuniformity_score,intrauniformity_score,genes_hit_weight,total_hits_weight,interuniformity_weight,intrauniformity_weight =analysis_function(dna"-"^randomerlen,mRNAs)
-    genes_missing=findall(x->x==0,hitcounts);
-    missing_IDs=join(ID_genes_missing(mRNAdata,genes_missing),",")
-    totaldeg=pooled_degeneracy(randomers)
-    total_time=0
-    string_time="N/A"
-    string_randomers=join(convert.(String,randomers),",")
-    genes_hit_weight=0
-    total_hits_weight=0
-    interuniformity_weight=0
-    intrauniformity_weight=0
-    pool_size=length(randomers);
-    data=DataFrame(poolsize=pool_size, primer_length=randomerlen, genes_hit_weight=genes_hit_weight, total_hits_weight=total_hits_weight,interuniformity_weight=interuniformity_weight,intrauniformity_weight=intrauniformity_weight,species=species,num_genes=numgenes,
-        transcriptome_size=transcriptome_size,mRNA_GC=mRNA_GC,blocked_GC=rRNA_GC,randomers=string_randomers,degeneracy=totaldeg,num_genes_hit=genes_hit,
-        genes_missing=missing_IDs,total_hits=total_hits,interuniformity_score=interuniformity_score,intrauniformity_score=intrauniformity_score,individual_times=string_time,time=total_time)
-    return data
+    accession=args["accession"]
+    species=args["species"]
+    genefile=args["genefile"]
+    rRNAtRNAfile=args["rRNAtRNAfile"]
+    nsims=args["nsims"]
+    genes_hit_weight=args["genes_hit_weight"]
+    total_hits_weight=args["total_hits_weight"]
+    intrauniformity_weight=args["intrauniformity_weight"]
+    interuniformity_weight=args["interuniformity_weight"]
+    bases=args["bases"]
+    bases=LongDNASeq(bases)
+    length_primers=args["length_primers"]
+    poolsize=args["poolsize"]
+    if accession===nothing && (genefile===nothing || rRNAtRNAfile===nothing) 
+        error("Please Provide either an accession number(s) or a gene file AND a rRNA/tRNA file")
+    end 
+    if accession===nothing
+        println("Using Provided Files")
+    else 
+        println("Using Accession number")
+        @rput accession
+        @rput species 
+        R"""
+        source("Genome_Info_Mining.R")
+        retrieve_genome(species,accession)
+        """
+        genefile=string(species,"_Genes.csv")
+        rRNAtRNAfile=string(species,"_rRNA_tRNA.csv")
+    end 
+    DF=NSR_RL(species,genefile,rRNAtRNAfile,length_primers,poolsize,bases;nsims=nsims,genes_hit_weight=genes_hit_weight,total_hits_weight=total_hits_weight,intrauniformity_weight=intrauniformity_weight,interuniformity_weight=interuniformity_weight)
+    str_randomers=DF[1,12]
+    randomers=split(str_randomers,",")
+    if outfile===nothing 
+        show(stdout,"text/plain",randomers)
+        println("\n")
+    else
+        f=open(outfile,"w")
+        for seq in randomers
+            println(f,seq)
+        end 
+        close(f)
+    end 
 end 
 
-function analyze_all_genomes_NSR_Pools(species_list)
-    DF1=DataFrame()
-    n=length(species_list)
-    for i = 1:n
-        randomers=LongDNASeq.(CSV.read(string("./Brute Force Pools V2 Compressed/",species_list[i],"_NSR_Brute_Force_Compressed.csv"),DataFrame)[:Sequence])
-        mRNAfile=string("./Genome Data/",species_list[i],"_Genes.csv")
-        rRNAfile=string("./Genome Data/",species_list[i],"_rRNA_tRNA.csv")
-        data=analyze_NSR_Pool(randomers;species=species_list[i],mRNAfile=mRNAfile,rRNAfile=rRNAfile)
-        DF1=vcat(DF1,data);
-        pct_complete=i/n*100;
-        println("$pct_complete % Complete")
-        CSV.write("./Brute_Force_Pool_Compressed_Analysis_all_rewards.csv",DF1)
-    end 
-    
-    
-end 
-function analyze_NSR_Pool_gene_coverage(species_name)
-    randomers=LongDNASeq.(CSV.read(string("./Brute Force Pools V2/",species_name,"_NSR_Brute_Force_all_randomers.csv"),DataFrame)[:Sequence])
-    mRNAfile=string("./Genome Data/",species_name,"_Genes.csv")
-    data=gene_coverage_counts(randomers,mRNAfile);
-    outputfile=string("./Brute Force Pools V2 Gene Coverage/",species_name,"_Gene_Coverage.csv")
-    CSV.write(outputfile,data)
-end 
-
-function analyze_cumulative_NSR_Pool(randomers,species_name;outputfile="./S_mutans_Cumulative_NSR_Pool.csv" ,kwargs...)
-    mRNAfile=string("./Genome Data/",species_name,"_Genes.csv")
-    mRNAdata=CSV.read(mRNAfile,DataFrame);
-    mRNAs=read_mRNA_list(mRNAdata);
-    nrandomers=length(randomers);
-    randomerlen=length(randomers[1]);
-    cumulative_hits=zeros(nrandomers)
-    cumulative_score=zeros(nrandomers)
-    cumulative_interuniformity_score=zeros(nrandomers)
-    cumulative_intrauniformity_score=zeros(nrandomers)
-    randomer_num=1:nrandomers;
-    str_randomers=convert.(String,randomers);
-    cumulative_genes_hit=zeros(nrandomers);
-    hitcounts=zeros(length(mRNAs))
-    hit_positions=[[] for _ in 1:length(mRNAs)]
-    reward_function,analysis_function,hitcounts,hit_positions=mRNA_all_rewards_function_factory(dna"-"^randomerlen,mRNAs,hitcounts,hit_positions;genes_hit_weight=1,total_hits_weight=1,interuniformity_weight=1,intrauniformity_weight=1)
-    for i=1:nrandomers
-        reward_function,analysis_function,hitcounts,hit_positions=mRNA_all_rewards_function_factory(randomers[i],mRNAs,hitcounts,hit_positions;genes_hit_weight=1,total_hits_weight=1,interuniformity_weight=1,intrauniformity_weight=1); #officially add hit positions from the new randomer 
-        final_score,hitcounts,hit_positions,genes_hit,total_hits,interuniformity_score,intrauniformity_score,genes_hit_weight,total_hits_weight,interuniformity_weight,intrauniformity_weight=analysis_function(dna"-"^randomerlen,mRNAs)
-        cumulative_score[i]=final_score
-        cumulative_hits[i]=total_hits
-        cumulative_interuniformity_score[i]=interuniformity_score
-        cumulative_genes_hit[i]=genes_hit
-        cumulative_intrauniformity_score[i]=intrauniformity_score
-    end 
-    data=DataFrame(run=randomer_num,randomer=str_randomers,cumulative_genes_hit=cumulative_genes_hit,cumulative_hits=cumulative_hits,cumulative_interuniformity_score=cumulative_interuniformity_score,cumulative_intrauniformity_score=cumulative_intrauniformity_score,cumulative_score=cumulative_score)
-    CSV.write(outputfile,data)
-end 
-
-function cumulative_runtime()
-    data=CSV.read("./S_mutans_NSR_Refactor_NSR_RL_All_Rewards_BF_Comparison_6_21_21.csv",DataFrame)
-    hitcountstime=parse.(Float64,(split(data[2,19],",")))
-    hit_pos_time=parse.(Float64,(split(data[4,19],",")))
-    run=1:length(hitcountstime)
-    cum_hitcountstime=zeros(length(hitcountstime))
-    cum_hit_pos_time=zeros(length(hit_pos_time))
-    for i =1:length(hit_pos_time)
-        cum_hitcountstime[i]=sum(hitcountstime[1:i])
-        cum_hit_pos_time[i]=sum(hit_pos_time[1:i])
-    end 
-    df=DataFrame(run=run,without_intra=cum_hitcountstime,with_intra=cum_hit_pos_time)
-    CSV.write("NSR_pool_size_timing_6_23_21.csv",df)
-    end 
-
-
-
-#data=CSV.read("NSR_RL/Brute Force Pools V2 Compressed/S_mutans_NSR_Brute_Force_Compressed.csv",DataFrame)
-#randomers=LongDNASeq.(data[:Sequence])
-#analyze_cumulative_NSR_Pool(randomers,"S_mutans";outputfile="./NSR_RL/Experiments/S_mutans_Cumulative_BF_Compressed.csv")
-
+main()
+        
 
