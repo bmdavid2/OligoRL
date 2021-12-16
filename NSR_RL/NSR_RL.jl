@@ -1130,8 +1130,8 @@ function main()
         @rput accession
         @rput species 
         R"""
-        source("Genome_Info_Mining.R")
-        retrieve_genome(species,accession)
+        library(nsrgenomes)
+        nsrgenomes(species,accession)
         """
         genefile=string(species,"_Genes.csv")
         rRNAtRNAfile=string(species,"_rRNA_tRNA.csv")

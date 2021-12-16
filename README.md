@@ -26,6 +26,7 @@ add Biosequences
 add DataFrames
 add XLSX
 add ArgParse
+add RCall
 ```
 
 # CutFreeRL 
@@ -40,7 +41,7 @@ $ julia CutFreeRL.jl -sequence NNNNNNNNNNN -restrictionsites GGTCTC,GGCCGG -nsim
 ### Required Arguments 
 - `--sequence`,`-s`: Starting DNA sequence that should be blocked from containing restriction sites. To generate a set of barcodes with the highest diversity, start with a string of N's the length of your oligo. 
 
-- `-restrictionsites`,`-r`: Sequences to block from the oligo pools. Separate multiple sequences by commas. Do not include spaces.
+- `--restrictionsites`,`-r`: Sequences to block from the oligo pools. Separate multiple sequences by commas. Do not include spaces.
 
 
 ### Optional Arugments 
@@ -67,46 +68,42 @@ $ julia OligoCompressor.jl --targetpool mysequences.txt
 
 
 # NSR-RL 
-The NSR-RL application is located in the `NSR_RL` folder as `NSR_RL.jl`. Open the file and run the script containing the NSR-RL functions to use the application.
 
-Users can design degenerate barcodes that lack specified restriction enzyme sites using the `NSR_RL` function. `NSR_RL` returns data frame containing the designed NSR primers along with other information about the run.
+The NSR-RL tool reqiures the use of [R](https://www.rstudio.com/products/rstudio/download/) in order to download the genomic data for your organism of interest. We have created the R package [nsrgenomes](https://github.com/bmdavid2/nsrgenomes) to automate this process.  Please refer to [nsrgenomes](https://github.com/bmdavid2/nsrgenomes) to install the package before you use the NSR-RL tool.
 
-```julia 
-    NSR_RL(;species="S_mutans",randomerlen=6,pool_size=25,nucleotides=dna"AGCTMRWSYKVHDBN",kwargs...)
+The NSR-RL application is located in the `NSR_RL` folder as `NSR_RL.jl`. To use NSR-RL to design your own NSR primers for any organism of interest, we have created a command line interface.
+
+
+``` 
+$ julia  NSR_RL.jl --species E_coli --accession NC_000913.3 --poolsize 100
 ```
 ### Arguments
-- `species="S_mutans"`: The species for which the primers will be designed. Used to extract gene and rRNA_tRNA data from the Genome Data folder in the current directory [see Formatting Genomes for NSR RL](#formatting-genomes-for-nsr-rl)
-- `randomerlen=6`: The length of the primers to be designed 
-- `pool_size=25`: The number of primers to be made 
-- `nucleotides=dna"AGCTMRWSYKVHDBN"`: The base set of available codes to be used for designing primers.
+- `--species`,`-s`: The species name of interest. Ex. "E_coli"
+- `--poolsize`,`-p`: The number of NSR primers in the final pool
 
-### Optional Keyword Arguments 
-- `nsims=1000`: The number of rollout simulations per action
+Either
+- `--accession`,`-a`: The genome accession number listed on the NCBI database
 
-    The following arguments allow uses to change the weights in the reward function: 
+Or 
+
+- `--genefile`: The file name for the file  containing the mRNA sequences of the organsim of interest made by the nsrgenomes R package
+- `--rRNAtRNAfile`: the file name for the file containing the rRNA and tRNA sequences made by the nsrgenomes R package
+
+
+### Optional Arguments 
+- `--outfile`,`-o`: The file name for the NSR-RL output. Provides a more detailed set of statistics.  
+- `--length_primers`,`-l =6`: The desired length of each primer. Default is hexamer. 
+- `--bases`,`-b =AGCTMRWSYKVHDBN`: The available base codes for the primers
+- `--nsims`,`-n =1000`: The number of rollout simulations per action
+
+The following arguments allow uses to change the weights in the reward function: 
     
-    $$Reward = \beta_{GenesHit}GenesHit + \beta_{TotalHits}TotalHits + \beta_{Inter}Interuniformity + \beta_{Intra}Intrauniformity$$
-    This allows users to empiracally tune NSR pools. 
-- `genes_hit_weight=1`: Weight given to hitting each gene at least once in the reward function 
-- `total_hits_weight=1`: Weight given to maximizing the total number of hits 
-- `interuniformity_weight=1`: Weight given to placing hits equally across all genes
-- `intrauniformity_weight=1`: Weight given to placing hits equally within each gene 
-
-### Formatting Genomes for NSR RL
-`NSR_RL` requires that the user have a formatted copy of the transcriptome and rRNA/tRNA sequences for the organism of interest. We have provided an R script called `Genome_Info_Mining.R` to automate the genome retrival and formatting process. Note that `Genome_Info_Mining.R` has only been tested for prokaryotic genomes. 
-
-1. To retrieve, format, and save a genome of interest, open `Genome_Info_Mining.R` and navigate to **Line 472**. The next few lines should look like this: 
-
-```r
-genome_accession= c("NC_004350.2")#Input list of accession numbers separated by comma
-x=lapply(genome_accession,new_df_0_creation) #Output list where each element in the list is a list itself. Element 1 in this list is the rRNA/tRNA seqs and element 2 is the mRNA seqs.
-species_name="S_mutans"
-suffix_gene="_Genes.csv"
-suffix_rRNA_tRNA="_rRNA_tRNA.csv"
-```
-2. Change the genome accession numbers and species name according to the organsim of interest. If the organsim has multiple accession numbers, separate them by comma in genome accession vector. 
-3. Run the entire `Genome_Info_Mining.R` script. Two files will be saved to the working directory `species_name_Genes.csv` and `species_name_rRNA_tRNA.csv`. 
-4. These two files can be automatically used by `NSR_RL` by putting them in a folder called `Genome Data` that exists in the working directory of `NSR_RL.jl`. When running `NSR_RL`, the function uses the species argument to extract both genome files from the `Genome Data` folder. The function handles the orientation of the genes, such that the designed NSR primers will theoretically hybridize to the proper strand. 
+$$Reward = \beta_{GenesHit}GenesHit + \beta_{TotalHits}TotalHits + \beta_{Inter}Interuniformity + \beta_{Intra}Intrauniformity$$
+This allows users to empiracally tune NSR pools. 
+- `--genes_hit_weight =1`: Weight given to hitting each gene at least once in the reward function 
+- `--total_hits_weight =1`: Weight given to maximizing the total number of hits 
+- `--interuniformity_weight =1`: Weight given to placing hits equally across all genes
+- `--intrauniformity_weight =1`: Weight given to placing hits equally within each gene 
 
 
 # Instructions to Replicate Published Data 
