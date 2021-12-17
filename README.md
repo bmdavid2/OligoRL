@@ -87,7 +87,9 @@ Either
 Or 
 
 - `--genefile`: The file name for the file  containing the mRNA sequences of the organsim of interest made by the nsrgenomes R package
-- `--rRNAtRNAfile`: the file name for the file containing the rRNA and tRNA sequences made by the nsrgenomes R package
+- `--rRNAtRNAfile`: the file name for the file containing the rRNA and tRNA sequences made by the nsrgenomes R package 
+
+Directly supplying the `genefile` and `rRNAtRNAfile` bypasses the genome download and formatting process. 
 
 
 ### Optional Arguments 
