@@ -1055,10 +1055,9 @@ function parse_commandline()
 
     @add_arg_table s begin
         "--accession","-a"
-            help = "Geneome Accesion number. Separate multiple accession numbers by comma wiht no spaces"
+            help = "Geneome Accesion number. Separate multiple accession numbers by comma with no spaces"
         "--species", "-s"
             help = "species name"
-            default = "AGCTMRWSYKVHDBN"
             required = true 
         "--genefile"
             help = "gene file name"
