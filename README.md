@@ -22,7 +22,7 @@ Each software application is a standalone Julia file containing all of the neces
 add Random
 add Statistics
 add CSV
-add Biosequences
+add BioSequences
 add DataFrames
 add XLSX
 add ArgParse
