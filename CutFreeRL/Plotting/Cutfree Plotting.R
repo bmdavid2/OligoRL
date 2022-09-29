@@ -56,9 +56,9 @@ plot_cutfree_data <- function() {
     #dplyr::select(n_sites, time, degeneracy) %>%
     #dplyr::summarise_all(dplyr::funs(mean, sd))
   
-  cowplot::plot_grid(plot1, plot0,plot2,NULL,rel_widths = c(1,1,1,0.75), align= "h", nrow=1 )
-  scaling_factor=5.5
-  ggsave("CutfreeRL_Figure_Black_Labs.tiff",width=scaling_factor,height=scaling_factor/3.75,dpi=300,units="in")
+  cowplot::plot_grid(plot1, plot0,plot2,NULL,rel_widths = c(1,1,1,1), align= "h", nrow=2 )
+  scaling_factor=3
+  ggsave("Figure1.eps",width=scaling_factor,height=scaling_factor,dpi=300,units="in")
 }
 plot_cutfree_data()
 ## Test cutfree runtime significance 

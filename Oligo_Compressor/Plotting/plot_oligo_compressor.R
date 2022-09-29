@@ -46,8 +46,8 @@ plotoligocompressor <-  function() {
     #ggplot2::theme_classic()
   print("Mean Efficiency")
   meaneff
-  cowplot::plot_grid(plot1,plot3,plot2,NULL,rel_widths = c(1,1,1,.75),nrow=1,align="vh")
-  ggsave("Oligo_Compressor_Figure_Plots.tiff",width=5.5,height=5.5/3.75,dpi=300,units="in")
+  cowplot::plot_grid(plot1,plot3,plot2,NULL,rel_widths = c(1,1,1,1),nrow=2,align="vh")
+  ggsave("Oligo_Compressor_Figure_Plots.eps",width=3,height=3,dpi=300,units="in")
 }
 plotoligocompressor()
 
