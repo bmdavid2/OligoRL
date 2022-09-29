@@ -9,7 +9,7 @@
 [Instructions to Replicate Published Data](#instructions-to-replicate-published-data) 
 
 # Description 
-A Reinforcemnt Learning Framework for Pooled Oligonucleotide Design. Solve oligo design problems with complex constraints. 
+[A Reinforcemnt Learning Framework for Pooled Oligonucleotide Design](https://academic.oup.com/bioinformatics/article-abstract/38/8/2219/6526381?redirectedFrom=fulltext&login=true). Solve oligo design problems with complex constraints. 
 
 OligoRL has three associated tools: 
 - CutFreeRL: finds degenerate barcodes that lack specified restriction enzyme sites
