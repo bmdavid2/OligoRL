@@ -2,24 +2,41 @@ import Base: *, sort
 using Random, Statistics, DataFrames, CSV
 using BioSequences,RCall,ArgParse
 import BioSequences: iscompatible
-
 ################################################
 #OligoRL Toolset 
 #################################################
 
 # Overload the concatenation operator to combine a sequence and 
 # a single base, i.e. dna"AGCGTGC" * DNA_T
-function *(seq::LongDNASeq, base::DNA)
-    seq * LongDNASeq([base])
+function *(seq::LongSequence{DNAAlphabet{4}}, base::DNA)
+    seq * LongDNA{4}([base])
 end
 
 # Overload sort to order DNA codes by degeneracy:
 #   A,G,C,T,M,R,W,S,Y,K,V,H,D,B,N
 function sort(seq::LongSequence{DNAAlphabet{4}}; rev::Bool=false)
-    sort(convert(Vector{DNA}, seq), by=degeneracy, rev=rev)
+    sort(collect(seq), by=degeneracy, rev=rev)
 end
 
+## Write the compostion function to determine the base composition of a DNA sequence
+function composition(seq::LongSequence{DNAAlphabet{4}})
+    A=count(x->x==DNA_A,seq)
+    T=count(x->x==DNA_T,seq)
+    G=count(x->x==DNA_G,seq)
+    C=count(x->x==DNA_C,seq)
+    comp=Dict(DNA_A=>A,DNA_T=>T,DNA_G=>G,DNA_C=>C)
+    return comp
+end 
 
+
+function approxsearchindex(seq,query,mismatches)
+    output=findfirst(ApproximateSearchQuery(query,iscompatible),mismatches,seq)
+    if output==nothing
+        return 0
+    else
+        return output[1]
+    end 
+end 
 # Determine if a given sequence is palindromic. Works both for unambiguous and ambigous bases. Returns TRUE if the sequence is a palindrome. 
 
 """
@@ -28,7 +45,7 @@ end
 Check if seq is palindromic. 
 """
 function is_palindrome(seq)
-    return occursin(seq,reverse_complement(seq))
+    return occursin(ExactSearchQuery(seq,iscompatible),reverse_complement(seq))
 end 
 
 """
@@ -258,22 +275,22 @@ function define_action_space(candidates)
             for j=1:ncands
                 states[j]=candidates[j][i];
             end 
-            if !occursin(dna"A",states)
+            if !occursin(ExactSearchQuery(dna"A"),states)
                 nucleotides[1]=DNA_A
             else 
                 nucleotides[1]=DNA_Gap
             end 
-            if !occursin(dna"T",states)
+            if !occursin(ExactSearchQuery(dna"T"),states)
                 nucleotides[2]=DNA_T
             else 
                 nucleotides[2]=DNA_Gap
             end
-            if !occursin(dna"C",states)
+            if !occursin(ExactSearchQuery(dna"C"),states)
                 nucleotides[3]=DNA_C
             else 
             nucleotides[3]=DNA_Gap
             end
-            if !occursin(dna"G",states)
+            if !occursin(ExactSearchQuery(dna"G"),states)
                 nucleotides[4]=DNA_G
             else 
                 nucleotides[4]=DNA_Gap
@@ -332,7 +349,7 @@ function isvalid(seq, sites)
         return false 
     end 
     for site in sites
-        if occursin(site, seq) 
+        if occursin(ExactSearchQuery(site,iscompatible), seq) 
             return false
         end
     end
@@ -505,7 +522,7 @@ function mRNA_within_gene_uniformity_function_factory(randomer::LongSequence{DNA
         if sum(length.(scored_hit_positions))==0
             final_score=0
         else 
-            gap_distances=calculate_gap_distances.(scored_hit_positions,gene_lengths,randomerlen)
+            gap_distances=calculate_gap_distances.(scored_hit_positions,gene_lengths)
             uniformity_score=zeros(mRNAnum)# "gap_standard_deviations_normalized" normalized by gene length
             for i =1:mRNAnum
                 if length(gap_distances[i])==0
@@ -534,7 +551,7 @@ function mRNA_within_gene_uniformity_function_factory(randomer::LongSequence{DNA
         if sum(length.(scored_hit_positions))==0
             final_score=0
         else 
-            gap_distances=calculate_gap_distances.(scored_hit_positions,gene_lengths,randomerlen)
+            gap_distances=calculate_gap_distances.(scored_hit_positions,gene_lengths)
             # "gap_standard_deviations_normalized" normalized by gene length
             for i =1:mRNAnum
                 if length(gap_distances[i])==0
@@ -650,7 +667,7 @@ function mRNA_all_rewards_function_factory(randomer::LongSequence{DNAAlphabet{4}
             if sum(length.(scored_hit_positions))==0
                 final_score=0
             else 
-                gap_distances=calculate_gap_distances.(scored_hit_positions,gene_lengths,randomerlen)
+                gap_distances=calculate_gap_distances.(scored_hit_positions,gene_lengths)
                 gap_distances=filter(x -> length(x)>0,gap_distances)
                 intrauniformity_scores=calculate_DULQ_score.(gap_distances)
                 filtered_hit_positions=filter(x -> length(x)>0,scored_hit_positions)
@@ -678,7 +695,7 @@ function mRNA_all_rewards_function_factory(randomer::LongSequence{DNAAlphabet{4}
                 interuniformity_score=0
                 intrauniformity_scores=0
             else 
-                gap_distances=calculate_gap_distances.(scored_hit_positions,gene_lengths,randomerlen)
+                gap_distances=calculate_gap_distances.(scored_hit_positions,gene_lengths)
                 gap_distances=filter(x -> length(x)>0,gap_distances)
                 intrauniformity_scores=calculate_DULQ_score.(gap_distances)
                 filtered_hit_positions=filter(x -> length(x)>0,scored_hit_positions)
@@ -819,7 +836,7 @@ Read in the list of unwanted sequences and store every unique randomerlen-mer re
 function read_blocking_sites(data; randomerlen=6)
     blocking_sites=[];
     for i =1:nrow(data)
-        seq=reverse_complement(LongDNASeq(string(data[i,:Sequence])));
+        seq=reverse_complement(LongDNA{4}(string(data[i,:Sequence])));
         for j=1:length(seq)-(randomerlen-1)
             if isvalid(seq[j:j+(randomerlen-1)],blocking_sites)
                 push!(blocking_sites,seq[j:j+(randomerlen-1)])
@@ -839,7 +856,7 @@ Read in the list of unwanted sequences and store every unique reverse_complement
 function read_rRNA_tRNA_list(data)
     RNAs=[]
     for i=1:nrow(data)
-        seq=reverse_complement(LongDNASeq(string(data[i,:Sequence])));
+        seq=reverse_complement(LongDNA{4}(string(data[i,:Sequence])));
         if isvalid(seq,RNAs)
             push!(RNAs,seq)
         end 
@@ -859,7 +876,7 @@ Read in the list of target sequences and store every unique reverse_complement s
 function read_mRNA_list(data)
     mRNAs=[]
     for i=1:nrow(data)
-        seq=reverse_complement(LongDNASeq(string(data[i,:mRNA_seq])));
+        seq=reverse_complement(LongDNA{4}(string(data[i,:mRNA_seq])));
         if isvalid(seq,mRNAs)
             push!(mRNAs,seq)
         end 
@@ -936,7 +953,7 @@ function coverage_distribution(randomers, mRNA)
      for seq in mRNA
          count=0;
          for randomer in randomers
-             if occursin(randomer, seq)
+             if occursin(ExactSearchQuery(randomer,iscompatible), seq)
                  count+=1;
              end
          end
@@ -954,7 +971,7 @@ function gene_coverage_counts(randomers,mRNAs)
         counter=0;
         for j in 1:length(mRNAs[i])-randomerlen
             for k in 1:length(randomers)
-                if occursin(randomers[k],mRNAs[i][j:j+randomerlen-1])
+                if occursin(ExactSearchQuery(randomers[k],iscompatible),mRNAs[i][j:j+randomerlen-1])
                     counter+=1
                 end
             end
@@ -1026,8 +1043,8 @@ function NSR_RL(species,mRNAfile,rRNAfile,randomerlen,pool_size,nucleotides = dn
         randomerstats= @timed oligo_rollout(all_ns,blocking_sites,mRNAs; reward_function=reward_function,kwargs...); #create new randomer and add to pool
         push!(randomers,randomerstats.value)
         push!(times,randomerstats.time)  
-        push!(blocking_sites,LongDNASeq(randomers[i]));
-        push!(blocking_sites,LongDNASeq(reverse_complement(randomers[i]))); ## avoid adding randomers that are reverse complements of each other
+        push!(blocking_sites,LongDNA{4}(randomers[i]));
+        push!(blocking_sites,LongDNA{4}(reverse_complement(randomers[i]))); ## avoid adding randomers that are reverse complements of each other
         blocking_sites=unique(decompress_pool(blocking_sites));
         reward_function,analysis_function,hitcounts,hit_positions=mRNA_all_rewards_function_factory(randomers[i],mRNAs,hitcounts,hit_positions; kwargs...) #officially add hit positions from the new randomer to the reward function 
         #println("Iteration $i")
@@ -1039,7 +1056,7 @@ function NSR_RL(species,mRNAfile,rRNAfile,randomerlen,pool_size,nucleotides = dn
     total_time=sum(times)
     string_time=join(times,",")
     string_num_blocked_sites=join(num_blocked_sites,",")
-    string_randomers=join(convert.(String,randomers),",")
+    string_randomers=join(String.(randomers),",")
     data=DataFrame(poolsize=pool_size, primer_length=randomerlen, genes_hit_weight=genes_hit_weight, total_hits_weight=total_hits_weight,interuniformity_weight=interuniformity_weight,intrauniformity_weight=intrauniformity_weight,species=species,num_genes=numgenes,
         transcriptome_size=transcriptome_size,mRNA_GC=mRNA_GC,blocked_GC=rRNA_GC,randomers=string_randomers,degeneracy=totaldeg,num_genes_hit=genes_hit,
         genes_missing=missing_IDs,total_hits=total_hits,interuniformity_score=interuniformity_score,intrauniformity_score=intrauniformity_score,individual_times=string_time,time=total_time,num_blocked_sites=string_num_blocked_sites,final_score=final_score)
@@ -1116,9 +1133,10 @@ function main()
     intrauniformity_weight=args["intrauniformity_weight"]
     interuniformity_weight=args["interuniformity_weight"]
     bases=args["bases"]
-    bases=LongDNASeq(bases)
+    bases=LongDNA{4}(bases)
     length_primers=args["length_primers"]
     poolsize=args["poolsize"]
+    outfile=args["outfile"]
     if accession===nothing && (genefile===nothing || rRNAtRNAfile===nothing) 
         error("Please Provide either an accession number(s) or a gene file AND a rRNA/tRNA file")
     end 
