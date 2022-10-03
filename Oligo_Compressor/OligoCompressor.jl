@@ -7,16 +7,15 @@ import BioSequences: iscompatible
 
 # Overload the concatenation operator to combine a sequence and 
 # a single base, i.e. dna"AGCGTGC" * DNA_T
-function *(seq::LongDNASeq, base::DNA)
-    seq * LongDNASeq([base])
+function *(seq::LongSequence{DNAAlphabet{4}}, base::DNA)
+    seq * LongDNA{4}([base])
 end
 
 # Overload sort to order DNA codes by degeneracy:
 #   A,G,C,T,M,R,W,S,Y,K,V,H,D,B,N
 function sort(seq::LongSequence{DNAAlphabet{4}}; rev::Bool=false)
-    sort(convert(Vector{DNA}, seq), by=degeneracy, rev=rev)
+    sort(collect(seq), by=degeneracy, rev=rev)
 end
-
 # Determine whether or not a candidate sequence belongs to any member of the list of sites. We only want seq that belong to sites 
 """
     isvalid(seq,sites)
@@ -26,7 +25,7 @@ Check if the degeneracy of seq is less than or equal to the number of sites it o
 function isvalid(seq, sites)
     counter=0;
     for site in sites
-        if occursin(seq,site) 
+        if occursin(ExactSearchQuery(seq,iscompatible),site) 
             counter+=1; 
         end
     end
@@ -124,11 +123,8 @@ end
 Calcualte the sum degeneracy of pool.
 """
 function pooled_degeneracy(pool)
-    deg=0;
-    for randomer in pool
-        deg +=degeneracy(randomer;uselog2=false);
-    end
-    return deg
+    degs=degeneracy.(pool;uselog2=false);
+    return sum(degs)
 end 
 
 
@@ -165,22 +161,22 @@ function define_action_space(sites)
         for j=1:nsites
             states[j]=sites[j][i];
         end 
-        if !occursin(dna"A",states)
+        if !occursin(ExactSearchQuery(dna"A"),states)
             nucleotides[1]=DNA_A
         else 
             nucleotides[1]=DNA_Gap
         end 
-        if !occursin(dna"T",states)
+        if !occursin(ExactSearchQuery(dna"T"),states)
             nucleotides[2]=DNA_T
         else 
             nucleotides[2]=DNA_Gap
         end
-        if !occursin(dna"C",states)
+        if !occursin(ExactSearchQuery(dna"C"),states)
             nucleotides[3]=DNA_C
         else 
             nucleotides[3]=DNA_Gap
         end
-        if !occursin(dna"G",states)
+        if !occursin(ExactSearchQuery(dna"G"),states)
             nucleotides[4]=DNA_G
         else 
             nucleotides[4]=DNA_Gap
@@ -202,7 +198,7 @@ function omit_codes(bases)
     testcodes=dna"AGCTMRWSYKVHDBN"
     testcodes_copy=deepcopy(testcodes)
     indexarray=[]
-    for i= 1:length(testcodes)
+    for i in eachindex(testcodes)
         count=0;
         for nucleotide in bases
             if iscompatible(nucleotide,testcodes[i])
@@ -224,7 +220,7 @@ end
 
 
 #Simulator function 
-function simulate_random_hit_score(prefix,bases,sites; nsims=1000, horizon=length(bases), kwargs...)
+function simulate_random_hit_score(prefix,bases,sites; nsims=100, horizon=length(bases), kwargs...)
     hit_scores=zeros(nsims)
     true_horizon = min(horizon, length(bases))
     Threads.@threads for i = 1:nsims   #This is where multithreading is incorporated 
@@ -297,7 +293,7 @@ function remove_hit_oligos(randomer,sites)
     n=length(sites);
     hit_indicies=[]
     for i=1:n 
-        if occursin(sites[i],randomer)
+        if occursin(ExactSearchQuery(sites[i],iscompatible),randomer)
             push!(hit_indicies,i)
         end
     end
@@ -315,7 +311,7 @@ function read_oligo_pool(file)
     n=length(x[:]);
     poolarray=x[:];
  for i in 1:n
-        seq=(LongDNASeq(string(poolarray[i])))
+        seq=(LongDNA{4}(string(poolarray[i])))
     push!(sites,seq)
     end
     return sites
@@ -324,7 +320,7 @@ end
 function read_oligo_pool(data)
     sites=[];
     for i=1:nrow(data)
-        seq=(LongDNASeq(string(data[:Sequence][i])))
+        seq=(LongDNA{4}(string(data[:Sequence][i])))
         push!(sites,seq)
     end 
     return sites 
@@ -367,7 +363,7 @@ function generate_random_pool(;randomerlen=6,randpoolsize=100,nucleotides=dna"AC
         end 
     end
     
-    return LongDNASeq.(randpool)      
+    return LongDNA{4}.(randpool)      
 end 
 
 """
@@ -442,7 +438,7 @@ function generate_poissrnd_pool(;randomerlen=6,randpoolsize=4,desiredsize=16)
         end
         check=true 
         for j = 1:length(randpool)
-            if occursin(randomer,randpool[j])
+            if occursin(ExactSearchQuery(randomer,iscompatible),randpool[j])
                 check=false
                 break 
             end 
@@ -455,7 +451,7 @@ function generate_poissrnd_pool(;randomerlen=6,randpoolsize=4,desiredsize=16)
         end 
     end
     
-    return LongDNASeq.(randpool)     
+    return LongDNA{4}.(randpool)     
 end 
 
 function poissrnd_degeneracy(lambda)
@@ -503,7 +499,7 @@ end
 
 ## Running function ##
 """
-    oligo_pool_compressor(uncompressed_pool::Array{LongSequence{DNAAlphabet{4}},1},nucleotides::LongSequence{DNAAlphabet{4}}=dna"AGCTMRWSYKVHDBN";kwargs...)
+    OligoCompressor(uncompressed_pool::Array{LongSequence{DNAAlphabet{4}},1},nucleotides::LongSequence{DNAAlphabet{4}}=dna"AGCTMRWSYKVHDBN";kwargs...)
 
 Compress an uncompresssed_pool of non-degenerate oligos into a smaller compresssed_pool of degenerate oligos. 
 
@@ -513,7 +509,7 @@ Compress an uncompresssed_pool of non-degenerate oligos into a smaller compresss
 # Common Keyword Arguments 
 - `nsims`: number of rollout simulations per action 
 """
-function oligo_pool_compressor(uncompressed_pool::Array{LongSequence{DNAAlphabet{4}},1},nucleotides::LongSequence{DNAAlphabet{4}}=dna"AGCTMRWSYKVHDBN";kwargs...)
+function OligoCompressor(uncompressed_pool::Array{LongSequence{DNAAlphabet{4}},1},nucleotides::LongSequence{DNAAlphabet{4}}=dna"AGCTMRWSYKVHDBN";kwargs...)
     sites=unique(uncompressed_pool);
     original_poolsize=length(sites)
     compressed_pool=[]
@@ -524,12 +520,10 @@ function oligo_pool_compressor(uncompressed_pool::Array{LongSequence{DNAAlphabet
         randomer=oligo_rollout(ns,sites;kwargs...)
         sites=remove_hit_oligos(randomer,sites);
         push!(compressed_pool,randomer);
-        #checkpoint=length(compressed_pool);
-        #println("Compressed Pool Size: $checkpoint")
     end 
     n=length(compressed_pool)
     failed_sites=[]
-    for i = 1:length(compressed_pool)
+    for i in eachindex(compressed_pool)
         if degeneracy(compressed_pool[i];uselog2=false)==0
             push!(failed_sites,i)
         end
@@ -556,7 +550,7 @@ function benchmark_oligo_compressor(;all_bases=dna"AGCTMRWSYKVHDBN",kwargs...)
         randpool=generate_random_pool(;randomerlen=6, randpoolsize=poolsize[i])
         strpool=join(convert.(String,randpool),",");
         push!(pools,strpool)
-        stats= @timed oligo_pool_compressor(randpool,all_bases;kwargs...)
+        stats= @timed OligoCompressor(randpool,all_bases;kwargs...)
         compressedsize[i]=length(stats.value)
         time[i]=stats.time
         filename="oligo_compressor_4_15_21.csv"
@@ -580,7 +574,7 @@ function run_recompression_experiment(;nruns=50,all_bases = dna"AGCTMRWSYKVHDBN"
         push!(pools,strpool)
         uncomrandpool=decompress_pool(randpool);
         decompressedsize[i]=length(uncomrandpool);
-        recomprandpool=oligo_pool_compressor(uncomrandpool,all_bases;kwargs...)
+        recomprandpool=OligoCompressor(uncomrandpool,all_bases;kwargs...)
         recompressedsize[i]=length(recomprandpool);
     end 
     data=DataFrame(A=runs,B=pools,C=poolsize,D=decompressedsize,E=recompressedsize)
@@ -595,10 +589,10 @@ function rerun_recompression_experiment(filename;nruns=50,all_bases = dna"AGCTMR
     data=CSV.read("recompression_experiment_3-19-21.csv",DataFrame)
     data[:recompressed100]=0;
     for i = 1:nruns 
-        randpool=LongDNASeq.(split(data[i,2],","))
+        randpool=LongDNA{4}.(split(data[i,2],","))
 
         uncomrandpool=decompress_pool(randpool);
-        recomprandpool=oligo_pool_compressor(uncomrandpool,all_bases;kwargs...)
+        recomprandpool=OligoCompressor(uncomrandpool,all_bases;kwargs...)
         data[i,:recompressed100]=length(recomprandpool);
     end 
     CSV.write(filename,data)
@@ -609,9 +603,9 @@ end
 #data=benchmark_oligo_compressor(;nsims=100)
 
 function run_compression_experiment()
-    orig_pool=LongDNASeq.(CSV.read("./Oligo_Compressor/Experiments/Nature_2018_NSR_Primers.csv",DataFrame)[:Sequence])
+    orig_pool=LongDNA{4}.(CSV.read("./Oligo_Compressor/Experiments/Nature_2018_NSR_Primers.csv",DataFrame)[:Sequence])
     all_bases = dna"AGCTMRWSYKVHDBN"
-    new_pool=oligo_pool_compressor(orig_pool,all_bases;nsims=100)
+    new_pool=OligoCompressor(orig_pool,all_bases;nsims=100)
     data=DataFrame(randomers=new_pool)
     orig_len=length(orig_pool)
     new_len=length(new_pool)
@@ -659,9 +653,9 @@ function main()
         target_pool=readlines(f)
         close(f)
     end 
-    target_pool=LongDNASeq.(target_pool)
-    allowed_ns=LongDNASeq.(allowed_ns)
-    compressed_pool=oligo_pool_compressor(target_pool,allowed_ns;nsims=nsims)
+    target_pool=LongDNA{4}.(target_pool)
+    allowed_ns=LongDNA{4}.(allowed_ns)
+    compressed_pool=OligoCompressor(target_pool,allowed_ns;nsims=nsims)
     compressed_pool=String.(compressed_pool)
     if outfile===nothing 
         show(stdout,"text/plain",compressed_pool)
