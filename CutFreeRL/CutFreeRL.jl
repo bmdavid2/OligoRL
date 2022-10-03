@@ -6,14 +6,14 @@ using BioSequences, XLSX,ArgParse
 
 # Overload the concatenation operator to combine a sequence and 
 # a single base, i.e. dna"AGCGTGC" * DNA_T
-function *(seq::LongDNASeq, base::DNA)
-    seq * LongDNASeq([base])
+function *(seq::LongSequence{DNAAlphabet{4}}, base::DNA)
+    seq * LongDNA{4}([base])
 end
 
 # Overload sort to order DNA codes by degeneracy:
 #   A,G,C,T,M,R,W,S,Y,K,V,H,D,B,N
 function sort(seq::LongSequence{DNAAlphabet{4}}; rev::Bool=false)
-    sort(convert(Vector{DNA}, seq), by=degeneracy, rev=rev)
+    sort(collect(seq), by=degeneracy, rev=rev)
 end
 
 """
@@ -23,7 +23,7 @@ Check if any of the sites appear in the sequence.
 """
 function isvalid(seq, sites)
     for site in sites
-        if occursin(site, seq)
+        if occursin(ExactSearchQuery(site,iscompatible), seq)
             return false
         end
     end
@@ -141,18 +141,24 @@ function simulate_greedy(prefix, bases, sites; horizon=length(bases))
 end
 
 """
-    cutfree_rollout(bases::Array{LongSequence{DNAAlphabet{4}},1}, sites::Array{LongSequence{DNAAlphabet{4}},1}; simulate=simulate_random, kwargs...)
+    CutFreeRL(sequence::LongSequence{DNAAlphabet{4}}, sites::Array{LongSequence{DNAAlphabet{4}},1}; simulate=simulate_random, kwargs...)
 
 Run the rollout algorithm to solve the CutFree MDP. 
 
 # Arguments 
-- `bases`: An array allowed bases at each postion, usually all 15 degenerate bases. Option is given because some companies restrict which degernate bases are allowed.
+- `sequence`: Starting DNA sequence that should be blocked from containing restriction sites. To generate a set of barcodes with the highest diversity, start with a string of N's the length of your oligo. Option is given because some companies restrict which degernate bases are allowed.
 - `sites`: An array of restriciton enzyme recognition sequences to be blocked in the random barcode. 
 - `simulate`: The choice of policy for rollout simulations. simulate_random will use a random rollout policy. simulate_greedy will use a greedy 1 step lookahead policy. 
 #Optional Keyword Arugments 
 - `nsims`: The number of rollout simulations per action
 """
-function cutfree_rollout(bases::Array{LongSequence{DNAAlphabet{4}},1}, sites::Array{LongSequence{DNAAlphabet{4}},1}; simulate=simulate_random, kwargs...)
+function CutFreeRL(sequence::LongSequence{DNAAlphabet{4}}, sites::Array{LongSequence{DNAAlphabet{4}},1}; simulate=simulate_random, kwargs...)
+    allowedbasedict=Dict(DNA_A => dna"A", DNA_T => dna"T", DNA_C => dna"C", DNA_G => dna"G",DNA_R =>dna"AG",DNA_Y=>dna"CT",DNA_S=>dna"GC",
+    DNA_W=>dna"AT",DNA_K=>dna"GT",DNA_M=>dna"AC",DNA_B=>dna"CGTYSKB",DNA_D=>dna"AGTRWKD",DNA_H=>dna"ACTYWMH",DNA_V=>dna"ACGRSMV",DNA_N=>dna"ACGTRYSWKMBDHVN",DNA_Gap=>dna"-")
+    bases=[dna"-" for i=1:length(sequence)]
+    for i in eachindex(sequence)
+        bases[i]=allowedbasedict[sequence[i]]
+    end 
     n = length(bases)
     randomer = dna"-" ^ n
 
@@ -201,13 +207,14 @@ function cutfree_rollout(bases::Array{LongSequence{DNAAlphabet{4}},1}, sites::Ar
     return randomer
 end
 
-# Test code
-#all_bases = dna"AGCTMRWSYKVHDBN"
-#all_ns = [all_bases for _ in 1:40] # make a length 10 randomer
-#sites = [dna"GGTCTC"] # BsaI
+#= Test code
+sequence=dna"NNNNNNNNNNNNNNNNNNNN"
+sites = [dna"GGTCTC"] # BsaI
+randomer = CutFreeRL(sequence, sites, simulate=simulate_random, nsims=1000)
+=#
 
-#randomer = cutfree_rollout(all_ns, sites, simulate=simulate_random, nsims=1000)
-#randomer = cutfree_rollout(all_ns, sites, simulate=simulate_greedy)
+#
+#randomer = CutFreeRL(sequence, sites, simulate=simulate_greedy)
 
 #deg = degeneracy(randomer)
 #natdeg = deg / log2(exp(1))
@@ -230,12 +237,12 @@ function runtimes(data)
     sites = map(x -> split(x, ',') .|> LongDNASeq, data.sites)
     for i = 1:nrow(data)
         bases = [all_bases for _ in 1:data.oligo_lengths[i]] #used for running lengths data 
-        stats = @timed cutfree_rollout(bases, sites[i], nsims=1000)
+        stats = @timed CutFreeRL(bases, sites[i], nsims=1000)
         data[i,:random_objval] = degeneracy(stats.value; uselog2=false)
         data[i,:random_runtime] = stats.time
         data[i,:random_code] = convert(String, stats.value)
 
-        stats = @timed cutfree_rollout(bases, sites[i], simulate=simulate_greedy)
+        stats = @timed CutFreeRL(bases, sites[i], simulate=simulate_greedy)
         data[i,:greedy_objval] = degeneracy(stats.value;uselog2=false)
         data[i,:greedy_runtime] = stats.time
         data[i,:greedy_code] = convert(String, stats.value)
@@ -256,7 +263,7 @@ function read_restriction_sites(file="cutfree_rebase_data.xlsx") #File taken fro
     dims=size(x[:]);
     n=dims[1]
  for i in 2:n #start from second row because excel uses row 1 as the label 
-        seq=LongDNASeq(string(x[i,7])) #the sequences are the 7th column of this dataframe
+        seq=LongDNA{4}(string(x[i,7])) #the sequences are the 7th column of this dataframe
         push!(blocking_sites,seq)
     return blocking_sites
 end
@@ -298,18 +305,13 @@ function main()
         println("  $arg  =>  $val")
     end
 
-    allowedbasedict=Dict(DNA_A => dna"A", DNA_T => dna"T", DNA_C => dna"C", DNA_G => dna"G",DNA_R =>dna"AG",DNA_Y=>dna"CT",DNA_S=>dna"GC",
-    DNA_W=>dna"AT",DNA_K=>dna"GT",DNA_M=>dna"AC",DNA_B=>dna"CGTYSKB",DNA_D=>dna"AGTRWKD",DNA_H=>dna"ACTYWMH",DNA_V=>dna"ACGRSMV",DNA_N=>dna"ACGTRYSWKMBDHVN",DNA_Gap=>dna"-")
+
     sequence=parsed_args["sequence"]
     sites=parsed_args["restrictionsites"]
     nsims=parsed_args["nsims"]
-    sequence=LongDNASeq.(sequence)
-    bases=[dna"-" for i=1:length(sequence)]
-    for i=1:length(sequence)
-        bases[i]=allowedbasedict[sequence[i]]
-    end 
-    sites=LongDNASeq.(split(sites,","))
-    randomer=cutfree_rollout(bases,sites;nsims=nsims)
+    sequence=LongDNA{4}.(sequence)
+    sites=LongDNA{4}.(split(sites,","))
+    randomer=CutFreeRL(sequence,sites;nsims=nsims)
     randomer=String(randomer)
     show(stdout,"text/plain",randomer)
     println("\n")
